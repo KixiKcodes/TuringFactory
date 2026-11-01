@@ -1,4 +1,4 @@
-namespace BusyBeaver;
+namespace TuringFactory;
 
 public enum MoveDirection {
     Left,
