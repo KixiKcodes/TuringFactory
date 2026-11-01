@@ -25,7 +25,7 @@ class Program {
         Dictionary<char, Vector2> positions = BuildStateLayout([.. machine.States]);
 
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint | ConfigFlags.ResizableWindow);
-        Raylib.InitWindow(1280, 720, "Busy Beaver");
+        Raylib.InitWindow(1280, 720, "Turing Factory");
         Raylib.SetTargetFPS(60);
 
         Vector2 haltPosition = new(1100, 120);
@@ -35,14 +35,15 @@ class Program {
         const float nodeRadius = 40f;
         Dictionary<int, char> tape = [];
         int tapeHead = 0;
+        int previousTapeHead = 0;
         char currentState = 'A';
         Transition? activeTransition = null;
         char? previousState = null;
         bool isPlaying = false;
         float stepTimer = 0f;
-        const float stepInterval = 0.2f;
+        const float stepInterval = 0.1f;
         float transitionProgress = 1f;
-        const float transitionDuration = 0.35f;
+        const float transitionDuration = 0.1f;
 
         while (!Raylib.WindowShouldClose()) {
             Vector2 mousePosition = Raylib.GetMousePosition();
@@ -68,11 +69,11 @@ class Program {
             if (Raylib.IsMouseButtonReleased(MouseButton.Left))
                 draggedNode = null;
 
-            if (Raylib.IsMouseButtonPressed(MouseButton.Left) &&
-                Raylib.CheckCollisionPointRec(mousePosition, playButton)) {
+            if (Raylib.IsMouseButtonPressed(MouseButton.Left) && Raylib.CheckCollisionPointRec(mousePosition, playButton)) {
                 if (currentState == TuringMachine.HaltState) {
                     tape.Clear();
                     tapeHead = 0;
+                    previousTapeHead = 0;
                     currentState = machine.StartState;
                     activeTransition = null;
                     previousState = null;
@@ -80,23 +81,11 @@ class Program {
                 isPlaying = !isPlaying;
             }
 
-            if (Raylib.IsKeyPressed(KeyboardKey.Space))
-                isPlaying = !isPlaying;
-
-            if (Raylib.IsKeyPressed(KeyboardKey.R)) {
-                tape.Clear();
-                tapeHead = 0;
-                currentState = machine.StartState;
-                activeTransition = null;
-                previousState = null;
-                isPlaying = false;
-            }
-
             if (isPlaying && currentState != TuringMachine.HaltState) {
                 stepTimer += Raylib.GetFrameTime();
-
-                if (stepTimer >= stepInterval) {
+                if (stepTimer >= stepInterval && transitionProgress >= 1f) {
                     stepTimer = 0f;
+                    previousTapeHead = tapeHead;
                     StepMachine(machine, tape, ref tapeHead, ref currentState, ref activeTransition, ref previousState);
                     transitionProgress = 0f;
                 }
@@ -147,7 +136,7 @@ class Program {
             Raylib.DrawCircle((int)haltPosition.X, (int)haltPosition.Y, 40, currentState == TuringMachine.HaltState ? Color.Gold : Color.Gray);
             Raylib.DrawTextEx(font, "Halt", new Vector2(haltPosition.X - 36, haltPosition.Y - 15), 30, 1, Color.Black);
 
-            DrawTape(tape, tapeHead, font, Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+            DrawTape(tape, tapeHead, previousTapeHead, transitionProgress, Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
             Raylib.EndDrawing();
         }
         Raylib.UnloadFont(font);
@@ -214,10 +203,10 @@ class Program {
         points[0] = start;
         points[^1] = end;
         for (int i = 0; i < points.Length - 1; i++)
-            Raylib.DrawLineEx(points[i], points[i + 1], 3f, isActive ? Color.Red : Color.Black);
+            Raylib.DrawLineEx(points[i], points[i + 1], 3f, isActive ? Color.Gold : Color.Black);
 
         if (isActive)
-            Raylib.DrawCircleV(points[(int)(transitionProgress * (points.Length - 1))], 10f, Color.Red);
+            Raylib.DrawCircleV(points[(int)(transitionProgress * (points.Length - 1))], 10f, Color.Gold);
 
         Vector2 startDirection = Vector2.Normalize(points[1] - points[0]);
         Vector2 endDirection = Vector2.Normalize(points[^1] - points[^2]);
@@ -243,10 +232,10 @@ class Program {
         }
 
         for (int i = 0; i < segments; i++)
-            Raylib.DrawLineEx(points[i], points[i + 1], 3f, isActive ? Color.Red : Color.Black);
+            Raylib.DrawLineEx(points[i], points[i + 1], 3f, isActive ? Color.Gold : Color.Black);
 
         if (isActive)
-            Raylib.DrawCircleV(QuadraticBezier(start, control, end, transitionProgress), 10f, Color.Red);
+            Raylib.DrawCircleV(QuadraticBezier(start, control, end, transitionProgress), 10f, Color.Gold);
 
         const float headDistance = 32f;
         (Vector2 startPosition, Vector2 startTangent) = GetCurvePointAtDistance(points, headDistance, false);
@@ -384,22 +373,30 @@ class Program {
         currentState = transition.NextState;
     }
 
-    static void DrawTape(Dictionary<int, char> tape, int tapeHead, Font font, int windowWidth, int windowHeight) {
+    static void DrawTape(Dictionary<int, char> tape, int tapeHead, int previousTapeHead, float transitionProgress, int windowWidth, int windowHeight) {
         const int cellSize = 55;
         const int visibleCells = 15;
-        float startX = (windowWidth - visibleCells * cellSize) / 2f;
-        float y = windowHeight - 100;
-        int firstCell = tapeHead - visibleCells / 2;
+        float viewWidth = visibleCells * cellSize;
+        float viewX = (windowWidth - viewWidth) / 2f;
+        float viewY = windowHeight - 100;
+        Rectangle tapeView = new(viewX, viewY, viewWidth, cellSize);
+        float movementOffset = (tapeHead - previousTapeHead) * cellSize * (1f - transitionProgress);
 
-        for (int i = 0; i < visibleCells; i++) {
-            int tapePosition = firstCell + i;
-            float x = startX + i * cellSize;
-            char value = tape.TryGetValue(tapePosition, out char storedValue) ? storedValue : '0';
+        Raylib.DrawRectangleRec(tapeView, Color.RayWhite);
+        Raylib.BeginScissorMode((int)tapeView.X, (int)tapeView.Y, (int)tapeView.Width, (int)tapeView.Height);
 
-            Raylib.DrawRectangle((int)x, (int)y, cellSize, cellSize, Color.RayWhite);
-            Raylib.DrawRectangleLinesEx(new Rectangle(x, y, cellSize, cellSize), tapePosition == tapeHead ? 5f : 2f, tapePosition == tapeHead ? Color.Red : Color.DarkGray);
-            Vector2 textSize = Raylib.MeasureTextEx(font, value.ToString(), 28, 1);
-            Raylib.DrawTextEx(font, value.ToString(), new Vector2(x + cellSize / 2f - textSize.X / 2f, y + cellSize / 2f - textSize.Y / 2f), 28, 1, Color.Black);
+        int firstCell = tapeHead - visibleCells / 2 - 1;
+        int lastCell = tapeHead + visibleCells / 2 + 1;
+        for (int tapePosition = firstCell; tapePosition <= lastCell; tapePosition++) {
+            float x = viewX + (tapePosition - tapeHead + visibleCells / 2) * cellSize + movementOffset;
+            bool isFilled = tape.TryGetValue(tapePosition, out char value) && value == '1';
+            Rectangle cell = new(x, viewY, cellSize, cellSize);
+
+            Raylib.DrawRectangleRec(cell, isFilled ? Color.Black : Color.RayWhite);
+            Raylib.DrawRectangleLinesEx(cell, tapePosition == tapeHead ? 5f : 2f, tapePosition == tapeHead ? Color.Gold : Color.DarkGray);
         }
+
+        Raylib.EndScissorMode();
+        Raylib.DrawRectangleLinesEx(tapeView, 2f, Color.DarkGray);
     }
 }
