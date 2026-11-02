@@ -1,0 +1,9 @@
+- [ ] Add tape history view
+- [ ] Add step count
+- [ ] Add step speed slider
+- [ ] Add reset button
+- [ ] Add zooming and panning
+- [ ] Add editing system for creating machines out of transition diagrams
+- [ ] Add title string (turing machine definition) which updates with the created diagram
+- [ ] Make UI dark and stylish
+- [ ] Improve animations

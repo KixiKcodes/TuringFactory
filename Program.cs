@@ -28,11 +28,10 @@ class Program {
         char? draggedNode = null;
         Vector2 dragOffset = Vector2.Zero;
 
-        Font font = Raylib.LoadFontEx("resources/Sono-Regular.ttf", 72, null, 0);
-
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint | ConfigFlags.ResizableWindow);
         Raylib.InitWindow(1280, 720, "Turing Factory");
         Raylib.SetTargetFPS(60);
+        Font font = Raylib.LoadFontEx("resources/Sono-Regular.ttf", 72, null, 0);
 
         while (!Raylib.WindowShouldClose()) {
             Vector2 mousePosition = Raylib.GetMousePosition();
@@ -91,10 +90,8 @@ class Program {
 
             string buttonText = isPlaying ? "Pause" : "Play";
             Vector2 buttonSize = Raylib.MeasureTextEx(font, buttonText, 24, 1);
-            Raylib.DrawTextEx(font, buttonText, new Vector2(
-                playButton.X + playButton.Width / 2f - buttonSize.X / 2f,
-                playButton.Y + playButton.Height / 2f - buttonSize.Y / 2f
-            ), 24, 1, Color.Black);
+            Vector2 buttonPosition = new(playButton.X + playButton.Width / 2f - buttonSize.X / 2f, playButton.Y + playButton.Height / 2f - buttonSize.Y / 2f);
+            Raylib.DrawTextEx(font, buttonText, buttonPosition, 24, 1, Color.Black);
 
             diagramRenderer.Draw(machine.States, currentState, previousState, activeTransition, transitionProgress, font);
 
