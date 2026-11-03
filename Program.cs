@@ -5,8 +5,9 @@ namespace TuringFactory;
 
 class Program {
     public static void Main(string[] args) {
-        const float transitionDuration = 0.1f;
-        const float stepInterval = 0.1f;
+        const float slowestStepDuration = 0.4f;
+        const float fastestStepDuration = 0.01f;
+        float speed = 0.5f;
         string definition = args.Length > 0 ? string.Join(" ", args) : "1RB1RD_1LC0RC_1RA1LD_0RE0LB_0RZ1RC"; // Skelet 1 (default).
 
         TuringMachine machine = TuringMachine.Parse(definition);
@@ -14,28 +15,44 @@ class Program {
 
         char currentState = 'A';
         char? previousState = null;
-
         bool isPlaying = false;
         float stepTimer = 0f;
+        int stepCount = 0;
 
         Transition? activeTransition = null;
         float transitionProgress = 1f;
 
         Dictionary<int, char> tape = [];
+        Dictionary<int, char> tapeFillStates = [];
         int tapeHead = 0;
         int previousTapeHead = 0;
+        List<TapeHistoryRenderer.TapeHistorySnapshot> tapeHistory = [new(new Dictionary<int, char>(tape), new Dictionary<int, char>(tapeFillStates), tapeHead)];
 
         char? draggedNode = null;
         Vector2 dragOffset = Vector2.Zero;
+        bool draggingSlider = false;
 
-        Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint | ConfigFlags.ResizableWindow);
-        Raylib.InitWindow(1280, 720, "Turing Factory");
-        Raylib.SetTargetFPS(60);
+        Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint);
+        Raylib.InitWindow(1920, 1080, "Turing Factory");
+        Raylib.SetTargetFPS(120);
         Font font = Raylib.LoadFontEx("resources/Sono-Regular.ttf", 72, null, 0);
 
         while (!Raylib.WindowShouldClose()) {
+            const float uiPadding = 20f;
+            const float buttonHeight = 45f;
+            const float buttonWidth = 110f;
+            const float buttonGap = 10f;
+            const float sliderWidth = 300f;
+            const float sliderHeight = 8f;
+
             Vector2 mousePosition = Raylib.GetMousePosition();
-            Rectangle playButton = new(20, 630, 110, 45);
+            float windowWidth = Raylib.GetScreenWidth();
+            float windowHeight = Raylib.GetScreenHeight();
+            float buttonY = windowHeight - uiPadding - buttonHeight;
+            Rectangle playButton = new(uiPadding, buttonY, buttonWidth, buttonHeight);
+            Rectangle resetButton = new(playButton.X + playButton.Width + buttonGap, buttonY, buttonWidth, buttonHeight);
+            Rectangle speedSlider = new(uiPadding, buttonY - 25f, sliderWidth, sliderHeight);
+            float stepDuration = slowestStepDuration - speed * (slowestStepDuration - fastestStepDuration);
 
             if (Raylib.IsMouseButtonPressed(MouseButton.Left)) {
                 draggedNode = diagramRenderer.FindNodeAtPosition(mousePosition, machine.States);
@@ -57,11 +74,25 @@ class Program {
             if (Raylib.IsMouseButtonReleased(MouseButton.Left))
                 draggedNode = null;
 
+            float sliderHandleX = speedSlider.X + speed * speedSlider.Width;
+            Vector2 sliderHandlePosition = new(sliderHandleX, speedSlider.Y + speedSlider.Height / 2f);
+            if (Raylib.IsMouseButtonPressed(MouseButton.Left) &&
+                Vector2.Distance(mousePosition, sliderHandlePosition) <= 12f) {
+                draggingSlider = true;
+            }
+            if (Raylib.IsMouseButtonReleased(MouseButton.Left))
+                draggingSlider = false;
+            if (draggingSlider)
+                speed = Math.Clamp((mousePosition.X - speedSlider.X) / speedSlider.Width, 0f, 1f);
+
             if (Raylib.IsMouseButtonPressed(MouseButton.Left) && Raylib.CheckCollisionPointRec(mousePosition, playButton)) {
                 if (currentState == TuringMachine.HaltState) {
                     tape.Clear();
+                    tapeFillStates.Clear();
                     tapeHead = 0;
                     previousTapeHead = 0;
+                    tapeHistory.Clear();
+                    tapeHistory.Add(new(new Dictionary<int, char>(tape), new Dictionary<int, char>(tapeFillStates), tapeHead));
                     currentState = machine.StartState;
                     activeTransition = null;
                     previousState = null;
@@ -69,40 +100,76 @@ class Program {
                 isPlaying = !isPlaying;
             }
 
+            if (Raylib.IsMouseButtonPressed(MouseButton.Left) &&
+                Raylib.CheckCollisionPointRec(mousePosition, resetButton)) {
+                tape.Clear();
+                tapeFillStates.Clear();
+                tapeHead = 0;
+                previousTapeHead = 0;
+                tapeHistory.Clear();
+                tapeHistory.Add(new(new Dictionary<int, char>(tape), new Dictionary<int, char>(tapeFillStates), tapeHead));
+                currentState = machine.StartState;
+                previousState = null;
+                activeTransition = null;
+                transitionProgress = 1f;
+                stepTimer = 0f;
+                stepCount = 0;
+                isPlaying = false;
+            }
+
             if (isPlaying && currentState != TuringMachine.HaltState) {
                 stepTimer += Raylib.GetFrameTime();
-                if (stepTimer >= stepInterval && transitionProgress >= 1f) {
+                if (stepTimer >= stepDuration && transitionProgress >= 1f) {
                     stepTimer = 0f;
                     previousTapeHead = tapeHead;
-                    StepMachine(machine, tape, ref tapeHead, ref currentState, ref activeTransition, ref previousState);
+                    StepMachine(machine, tape, tapeFillStates, ref tapeHead, ref currentState, ref activeTransition, ref previousState);
+                    stepCount++;
+                    tapeHistory.Add(new(new Dictionary<int, char>(tape), new Dictionary<int, char>(tapeFillStates), tapeHead));
                     transitionProgress = 0f;
                 }
             }
 
             if (transitionProgress < 1f)
-                transitionProgress = MathF.Min(transitionProgress + Raylib.GetFrameTime() / transitionDuration, 1f);
+                transitionProgress = MathF.Min(transitionProgress + Raylib.GetFrameTime() / stepDuration, 1f);
 
             Raylib.BeginDrawing();
             Raylib.ClearBackground(Color.RayWhite);
 
+            Vector2 titleSize = Raylib.MeasureTextEx(font, definition, 28, 1);
+            Raylib.DrawTextEx(font, definition, new Vector2(windowWidth / 2f - titleSize.X / 2f, uiPadding), 28, 1, Color.Black);
+
+            string stepText = $"Steps: {stepCount}";
+            Raylib.DrawTextEx(font, stepText, new Vector2(uiPadding, uiPadding), 24, 1, Color.Black);
+
             Raylib.DrawRectangleRec(playButton, Color.LightGray);
             Raylib.DrawRectangleLinesEx(playButton, 2f, Color.DarkGray);
+            Raylib.DrawRectangleRec(resetButton, Color.LightGray);
+            Raylib.DrawRectangleLinesEx(resetButton, 2f, Color.DarkGray);
 
             string buttonText = isPlaying ? "Pause" : "Play";
             Vector2 buttonSize = Raylib.MeasureTextEx(font, buttonText, 24, 1);
             Vector2 buttonPosition = new(playButton.X + playButton.Width / 2f - buttonSize.X / 2f, playButton.Y + playButton.Height / 2f - buttonSize.Y / 2f);
             Raylib.DrawTextEx(font, buttonText, buttonPosition, 24, 1, Color.Black);
 
-            diagramRenderer.Draw(machine.States, currentState, previousState, activeTransition, transitionProgress, font);
+            Vector2 resetTextSize = Raylib.MeasureTextEx(font, "Reset", 24, 1);
+            Raylib.DrawTextEx(font,"Reset", new Vector2(resetButton.X + resetButton.Width / 2f - resetTextSize.X / 2f, resetButton.Y + resetButton.Height / 2f - resetTextSize.Y / 2f), 24, 1, Color.Black);
 
+            Raylib.DrawRectangleRec(speedSlider, Color.LightGray);
+            Raylib.DrawRectangleLinesEx(speedSlider, 2f, Color.DarkGray);
+            float sliderX = speedSlider.X + speed * speedSlider.Width;
+            Raylib.DrawCircle((int)sliderX, (int)(speedSlider.Y + speedSlider.Height / 2f), 9, Color.DarkGray);
+
+            diagramRenderer.Draw(machine.States, currentState, previousState, activeTransition, transitionProgress, font);
             DrawTape(tape, tapeHead, previousTapeHead, transitionProgress, Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+            TapeHistoryRenderer.Draw(tapeHistory, machine.States, Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+
             Raylib.EndDrawing();
         }
         Raylib.UnloadFont(font);
         Raylib.CloseWindow();
     }
 
-    static void StepMachine(TuringMachine machine, Dictionary<int, char> tape, ref int tapeHead, ref char currentState, ref Transition? activeTransition, ref char? previousState) {
+    static void StepMachine(TuringMachine machine, Dictionary<int, char> tape, Dictionary<int, char> tapeFillStates, ref int tapeHead, ref char currentState, ref Transition? activeTransition, ref char? previousState) {
         if (currentState == TuringMachine.HaltState)
             return;
         char readValue = tape.TryGetValue(tapeHead, out char value) ? value : '0';
@@ -111,10 +178,13 @@ class Program {
 
         previousState = currentState;
         activeTransition = transition;
-        if (transition.WriteValue == '1')
+        if (transition.WriteValue == '1') {
             tape[tapeHead] = '1';
-        else
+            tapeFillStates[tapeHead] = currentState;
+        } else {
             tape.Remove(tapeHead);
+            tapeFillStates.Remove(tapeHead);
+        }
         tapeHead += transition.Direction == MoveDirection.Right ? 1 : -1;
         currentState = transition.NextState;
     }

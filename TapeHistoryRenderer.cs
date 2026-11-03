@@ -1,0 +1,59 @@
+using Raylib_cs;
+
+namespace TuringFactory;
+
+static class TapeHistoryRenderer {
+    public readonly record struct TapeHistorySnapshot(
+        Dictionary<int, char> Tape,
+        Dictionary<int, char> FillStates,
+        int TapeHead
+    );
+
+    public static void Draw(IReadOnlyList<TapeHistorySnapshot> history, IReadOnlyCollection<char> states, int windowWidth, int windowHeight) {
+        const float margin = 20f;
+        const float viewWidth = 260f;
+        const int initialVisibleCells = 15;
+
+        float viewX = windowWidth - viewWidth - margin;
+        float viewY = margin;
+        float viewHeight = windowHeight - margin * 2f;
+        if (history.Count == 0)
+            return;
+        int minimumPosition = history.Min(snapshot =>
+            Math.Min(snapshot.TapeHead, snapshot.Tape.Keys.DefaultIfEmpty(snapshot.TapeHead).Min())
+        );
+        int maximumPosition = history.Max(snapshot =>
+            Math.Max(snapshot.TapeHead, snapshot.Tape.Keys.DefaultIfEmpty(snapshot.TapeHead).Max())
+        );
+        int usedColumnCount = maximumPosition - minimumPosition + 1;
+        float cellSize = viewWidth / Math.Max(usedColumnCount, initialVisibleCells);
+        float rowHeight = MathF.Min(cellSize, viewHeight / history.Count);
+        float contentX = viewX - minimumPosition * cellSize;
+
+        Raylib.DrawRectangle((int)viewX, (int)viewY, (int)viewWidth, (int)viewHeight, Color.RayWhite);
+        Raylib.BeginScissorMode((int)viewX, (int)viewY, (int)viewWidth, (int)viewHeight);
+
+        for (int row = 0; row < history.Count; row++) {
+            TapeHistorySnapshot snapshot = history[row];
+            float y = viewY + row * rowHeight;
+
+            foreach (KeyValuePair<int, char> cell in snapshot.Tape) {
+                if (cell.Value != '1')
+                    continue;
+                float x = contentX + cell.Key * cellSize;
+                Color color = GetStateColor(snapshot.FillStates[cell.Key], states);
+
+                Raylib.DrawRectangleRec(new Rectangle(x, y, cellSize, rowHeight), color);
+            }
+        }
+
+        Raylib.EndScissorMode();
+        Raylib.DrawRectangleLines((int)viewX, (int)viewY, (int)viewWidth, (int)viewHeight, Color.DarkGray);
+    }
+
+    static Color GetStateColor(char state, IReadOnlyCollection<char> states) {
+        int index = states.ToList().IndexOf(state);
+        float hue = index * 360f / Math.Max(states.Count, 1);
+        return Raylib.ColorFromHSV(hue, 0.65f, 0.95f);
+    }
+}
