@@ -1,9 +1,0 @@
-- [x] Add tape history view
-- [x] Add step count
-- [x] Add step speed slider
-- [x] Add reset button
-- [ ] Add zooming and panning
-- [ ] Add editing system for creating machines out of transition diagrams
-- [x] Add title string (turing machine definition) which updates with the created diagram
-- [ ] Make UI dark and stylish
-- [ ] Improve animations (split state highlight and transition highlight, make tape head smootheer, ass histogram node erasure colors as well)

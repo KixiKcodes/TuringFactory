@@ -18,9 +18,137 @@ class TransitionDiagramRenderer(TuringMachine machine) {
         char Symbol
     );
 
-    readonly List<GraphEdge> edges = BuildEdges(machine);
+    public enum TransitionControl {
+        Read,
+        Write,
+        Direction
+    }
+
+    public readonly record struct TransitionHit(char State, char ReadSymbol, TransitionControl Control);
+
+    List<GraphEdge> edges = BuildEdges(machine);
     public Dictionary<char, Vector2> Positions { get; } = BuildStateLayout([.. machine.States]);
     public Vector2 HaltPosition { get; set; } = new(1100, 120);
+
+    public void Refresh() {
+        edges = BuildEdges(machine);
+        foreach (char state in machine.States)
+            if (!Positions.ContainsKey(state))
+                Positions[state] = FindNewStatePosition();
+        foreach (char state in Positions.Keys.ToList())
+            if (!machine.States.Contains(state))
+                Positions.Remove(state);
+    }
+
+    public void SetStatePosition(char state, Vector2 position) {
+        Positions[state] = position;
+    }
+
+    public void RemapStatePositions(IReadOnlyDictionary<char, char> renames) {
+        foreach (var rename in renames) {
+            if (Positions.TryGetValue(rename.Key, out Vector2 position)) {
+                Positions.Remove(rename.Key);
+                Positions[rename.Value] = position;
+            }
+        }
+    }
+
+    public TransitionHit? FindTransitionControlAtPosition(Vector2 mousePosition) {
+        const float hitDistance = 25f;
+        foreach (GraphEdge edge in edges) {
+            Vector2 from = Positions[edge.From];
+            Vector2 to = edge.To == TuringMachine.HaltState || !Positions.TryGetValue(edge.To, out Vector2 targetPosition) ? HaltPosition : targetPosition;
+            if (Vector2.Distance(from, to) < 1f) {
+                const float loopRadius = 40f;
+                GetSelfLoopGeometry(edge, from, out Vector2 loopCenter, out Vector2 loopStart, out Vector2 loopEnd, out bool bottom);
+                Vector2 firstMarker = Vector2.Lerp(loopStart, loopCenter + new Vector2(-loopRadius, 0), 0.35f);
+                Vector2 lastMarker = Vector2.Lerp(loopEnd, loopCenter + new Vector2(loopRadius, 0), 0.35f);
+                if (Vector2.Distance(mousePosition, firstMarker) <= hitDistance)
+                    return new(edge.From, edge.Transition.ReadValue, TransitionControl.Read);
+                if (Vector2.Distance(mousePosition, lastMarker) <= hitDistance)
+                    return new(edge.From, edge.Transition.ReadValue, TransitionControl.Write);
+                Vector2 selfLoopLabelPosition = loopCenter + new Vector2(0, bottom ? loopRadius : -loopRadius);
+                if (Vector2.Distance(mousePosition, selfLoopLabelPosition) <= hitDistance)
+                    return new(edge.From, edge.Transition.ReadValue, TransitionControl.Direction);
+                continue;
+            }
+
+            Vector2 direction = Vector2.Normalize(to - from);
+            Vector2 normal = new(-direction.Y, direction.X);
+            float curveOffset = (edge.ParallelIndex - (edge.ParallelCount - 1) / 2f) * 130f;
+            if (edge.From > edge.To)
+                curveOffset = -curveOffset;
+            Vector2 start = from + direction * 40f;
+            Vector2 end = to - direction * 40f;
+            Vector2 control = (start + end) * 0.5f + normal * curveOffset;
+            Vector2[] points = [.. Enumerable.Range(0, 49).Select(index => QuadraticBezier(start, control, end, index / 48f))];
+            (Vector2 readPosition, Vector2 readDirection) = GetCurvePointAtDistance(points, 32f, false);
+            (Vector2 writePosition, Vector2 writeDirection) = GetCurvePointAtDistance(points, 32f, true);
+            Vector2 labelPosition = QuadraticBezier(start, control, end, 0.5f);
+
+            if (Vector2.Distance(mousePosition, readPosition) <= hitDistance)
+                return new(edge.From, edge.Transition.ReadValue, TransitionControl.Read);
+            if (Vector2.Distance(mousePosition, writePosition) <= hitDistance)
+                return new(edge.From, edge.Transition.ReadValue, TransitionControl.Write);
+            if (Vector2.Distance(mousePosition, labelPosition) <= hitDistance)
+                return new(edge.From, edge.Transition.ReadValue, TransitionControl.Direction);
+        }
+        return null;
+    }
+
+    public (char State, char ReadSymbol)? FindTransitionAtPosition(Vector2 mousePosition) {
+        const float hitDistance = 18f;
+        foreach (GraphEdge edge in edges) {
+            Vector2 from = Positions[edge.From];
+            Vector2 to = edge.To == TuringMachine.HaltState || !Positions.TryGetValue(edge.To, out Vector2 targetPosition) ? HaltPosition : targetPosition;
+            if (Vector2.Distance(from, to) < 1f) {
+                GetSelfLoopGeometry(edge, from, out Vector2 loopCenter, out _, out _, out _);
+                if (MathF.Abs(Vector2.Distance(mousePosition, loopCenter) - 40f) <= hitDistance)
+                    return (edge.From, edge.Transition.ReadValue);
+                continue;
+            }
+
+            Vector2 direction = Vector2.Normalize(to - from);
+            Vector2 normal = new(-direction.Y, direction.X);
+            float separation = 130f;
+            float curveOffset = (edge.ParallelIndex - (edge.ParallelCount - 1) / 2f) * separation;
+            if (edge.From > edge.To)
+                curveOffset = -curveOffset;
+            Vector2 start = from + direction * 40f;
+            Vector2 end = to - direction * 40f;
+            Vector2 control = (start + end) * 0.5f + normal * curveOffset;
+            Vector2 previous = start;
+            for (int i = 1; i <= 24; i++) {
+                Vector2 current = QuadraticBezier(start, control, end, i / 24f);
+                if (DistanceToSegment(mousePosition, previous, current) <= hitDistance)
+                    return (edge.From, edge.Transition.ReadValue);
+                previous = current;
+            }
+        }
+        return null;
+    }
+
+    static void GetSelfLoopGeometry(GraphEdge edge, Vector2 center, out Vector2 loopCenter, out Vector2 start, out Vector2 end, out bool bottom) {
+        bottom = edge.ParallelCount == 2 && edge.ParallelIndex == 1;
+        float side = bottom ? 1f : -1f;
+        loopCenter = center + new Vector2(0, side * 80f);
+        start = center + new Vector2(-22f, side * 26f);
+        end = center + new Vector2(22f, side * 26f);
+    }
+
+    Vector2 FindNewStatePosition() {
+        int index = Positions.Count;
+        return new(300 + (index % 4) * 220, 180 + (index / 4) * 180);
+    }
+
+    static float DistanceToSegment(Vector2 point, Vector2 start, Vector2 end) {
+        Vector2 segment = end - start;
+        float lengthSquared = segment.LengthSquared();
+        if (lengthSquared <= 0f)
+            return Vector2.Distance(point, start);
+        float projection = Math.Clamp(Vector2.Dot(point - start, segment) / lengthSquared, 0f, 1f);
+        return Vector2.Distance(point, start + segment * projection);
+    }
 
     public char? FindNodeAtPosition(Vector2 mousePosition, IReadOnlyCollection<char> states) {
         const float nodeRadius = 40f;
@@ -34,17 +162,20 @@ class TransitionDiagramRenderer(TuringMachine machine) {
         return null;
     }
 
-    public void Draw(IReadOnlyCollection<char> states, char currentState, char? previousState, Transition? activeTransition, float transitionProgress, Font font) {
+    public void Draw(IReadOnlyCollection<char> states, char currentState, int stepCount, char? previousState, Transition? activeTransition, float transitionProgress, Font font,
+                     char? selectedState = null, (char State, char ReadSymbol)? selectedTransition = null) {
         List<SymbolMarker> outlineMarkers = [];
         List<SymbolMarker> filledMarkers = [];
 
         foreach (GraphEdge edge in edges) {
             Vector2 from = Positions[edge.From];
-            Vector2 to = edge.To == TuringMachine.HaltState ? HaltPosition : Positions[edge.To];
+            Vector2 to = edge.To == TuringMachine.HaltState || !Positions.TryGetValue(edge.To, out Vector2 targetPosition) ? HaltPosition : targetPosition;
             bool isActive = previousState == edge.From &&
                 activeTransition == edge.Transition;
+            bool isSelected = selectedTransition is (char state, char readSymbol) &&
+                state == edge.From && readSymbol == edge.Transition.ReadValue;
 
-            DrawTransitionEdge(edge, from, to, isActive, transitionProgress, font, outlineMarkers, filledMarkers);
+            DrawTransitionEdge(edge, from, to, isActive, isSelected, transitionProgress, font, outlineMarkers, filledMarkers);
         }
 
         foreach (SymbolMarker marker in outlineMarkers)
@@ -56,14 +187,25 @@ class TransitionDiagramRenderer(TuringMachine machine) {
         List<char> stateList = [.. states];
         foreach (char state in states) {
             Vector2 pos = Positions[state];
-            Color color = state == currentState ? Color.Gold : GetStateColor(state, stateList);
+            Color color = stepCount > 0 && state == currentState ? Color.Gold : GetStateColor(state, stateList);
 
             Raylib.DrawCircle((int)pos.X, (int)pos.Y, 40, color);
+            if (selectedState == state)
+                Raylib.DrawCircleLines((int)pos.X, (int)pos.Y, 46, Color.Blue);
             Raylib.DrawTextEx(font, state.ToString(), new Vector2(pos.X - 12.5f, pos.Y - 18), 40, 1, Color.Black);
         }
 
-        Raylib.DrawCircle((int)HaltPosition.X, (int)HaltPosition.Y, 40, currentState == TuringMachine.HaltState ? Color.Gold : Color.Gray);
+        Raylib.DrawCircle((int)HaltPosition.X, (int)HaltPosition.Y, 40, stepCount > 0 && currentState == TuringMachine.HaltState ? Color.Gold : Color.Gray);
         Raylib.DrawTextEx(font, "Halt", new Vector2(HaltPosition.X - 36, HaltPosition.Y - 15), 30, 1, Color.Black);
+    }
+
+    public void DrawLinkPreview(char source, Vector2 mousePosition) {
+        if (!Positions.TryGetValue(source, out Vector2 start))
+            return;
+        Vector2 direction = Vector2.Normalize(mousePosition - start);
+        if (float.IsNaN(direction.X))
+            return;
+        Raylib.DrawLineEx(start + direction * 40f, mousePosition, 3f, Color.Blue);
     }
 
     static List<GraphEdge> BuildEdges(TuringMachine machine) {
@@ -86,11 +228,12 @@ class TransitionDiagramRenderer(TuringMachine machine) {
         return edges;
     }
 
-    static void DrawTransitionEdge(GraphEdge edge, Vector2 from, Vector2 to, bool isActive, float transitionProgress, Font font, List<SymbolMarker> outlineMarkers, List<SymbolMarker> filledMarkers) {
+    static void DrawTransitionEdge(GraphEdge edge, Vector2 from, Vector2 to, bool isActive, bool isSelected, float transitionProgress, Font font,
+                                   List<SymbolMarker> outlineMarkers, List<SymbolMarker> filledMarkers) {
         const float nodeRadius = 40f;
 
         if (Vector2.Distance(from, to) < 1f) {
-            DrawSelfLoop(edge, from, isActive, transitionProgress, font, outlineMarkers, filledMarkers);
+            DrawSelfLoop(edge, from, isActive, isSelected, transitionProgress, font, outlineMarkers, filledMarkers);
             return;
         }
 
@@ -105,28 +248,25 @@ class TransitionDiagramRenderer(TuringMachine machine) {
         Vector2 midpoint = (start + end) * 0.5f;
         Vector2 control = midpoint + normal * curveOffset;
 
-        DrawQuadraticCurve(start, control, end, edge.Transition, isActive, transitionProgress, font, outlineMarkers, filledMarkers);
+        DrawQuadraticCurve(start, control, end, edge.Transition, isActive, isSelected, transitionProgress, font, outlineMarkers, filledMarkers);
     }
 
-    static void DrawSelfLoop(GraphEdge edge, Vector2 center, bool isActive, float transitionProgress, Font font, List<SymbolMarker> outlineMarkers, List<SymbolMarker> filledMarkers) {
-        const float nodeRadius = 40f;
+    static void DrawSelfLoop(GraphEdge edge, Vector2 center, bool isActive, bool isSelected, float transitionProgress, Font font, List<SymbolMarker> outlineMarkers,
+                             List<SymbolMarker> filledMarkers) {
         const float loopRadius = 40f;
-        float horizontalOffset = (edge.ParallelIndex - (edge.ParallelCount - 1) / 2f) * 10f;
-        Vector2 loopCenter = center + new Vector2(horizontalOffset, -nodeRadius - loopRadius);
-        Vector2 start = center + new Vector2(horizontalOffset - nodeRadius * 0.55f, -nodeRadius * 0.65f);
-        Vector2 end = center + new Vector2(horizontalOffset + nodeRadius * 0.55f, -nodeRadius * 0.65f);
+        GetSelfLoopGeometry(edge, center, out Vector2 loopCenter, out Vector2 start, out Vector2 end, out bool bottom);
         const int segments = 32;
         var points = new Vector2[segments + 1];
 
         for (int i = 0; i <= segments; i++) {
-            float angle = MathF.PI + MathF.PI * i / segments;
+            float angle = bottom ? MathF.PI - MathF.PI * i / segments : MathF.PI + MathF.PI * i / segments;
             points[i] = loopCenter + new Vector2(MathF.Cos(angle) * loopRadius, MathF.Sin(angle) * loopRadius);
         }
 
         points[0] = start;
         points[^1] = end;
         for (int i = 0; i < points.Length - 1; i++)
-            Raylib.DrawLineEx(points[i], points[i + 1], 3f, isActive ? Color.Gold : Color.Black);
+            Raylib.DrawLineEx(points[i], points[i + 1], 3f, isActive ? Color.Gold : isSelected ? Color.Blue : Color.Black);
 
         if (isActive)
             Raylib.DrawCircleV(points[(int)(transitionProgress * (points.Length - 1))], 10f, Color.Gold);
@@ -139,13 +279,14 @@ class TransitionDiagramRenderer(TuringMachine machine) {
         AddMarker(new SymbolMarker(startMarker, startDirection, edge.Transition.ReadValue), outlineMarkers, filledMarkers);
         AddMarker(new SymbolMarker(endMarker, endDirection, edge.Transition.WriteValue), outlineMarkers, filledMarkers);
 
-        Vector2 labelPosition = loopCenter + new Vector2(0, -loopRadius);
+        Vector2 labelPosition = loopCenter + new Vector2(0, bottom ? loopRadius : -loopRadius);
         string directionLabel = edge.Transition.Direction == MoveDirection.Left ? "L" : "R";
 
         DrawCenteredLabel(font, directionLabel, labelPosition);
     }
 
-    static void DrawQuadraticCurve(Vector2 start, Vector2 control, Vector2 end, Transition transition, bool isActive, float transitionProgress, Font font, List<SymbolMarker> outlineMarkers, List<SymbolMarker> filledMarkers) {
+    static void DrawQuadraticCurve(Vector2 start, Vector2 control, Vector2 end, Transition transition, bool isActive, bool isSelected, float transitionProgress, Font font,
+                                   List<SymbolMarker> outlineMarkers, List<SymbolMarker> filledMarkers) {
         const int segments = 48;
         var points = new Vector2[segments + 1];
 
@@ -155,7 +296,7 @@ class TransitionDiagramRenderer(TuringMachine machine) {
         }
 
         for (int i = 0; i < segments; i++)
-            Raylib.DrawLineEx(points[i], points[i + 1], 3f, isActive ? Color.Gold : Color.Black);
+            Raylib.DrawLineEx(points[i], points[i + 1], 3f, isActive ? Color.Gold : isSelected ? Color.Blue : Color.Black);
 
         if (isActive)
             Raylib.DrawCircleV(QuadraticBezier(start, control, end, transitionProgress), 10f, Color.Gold);
