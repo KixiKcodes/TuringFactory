@@ -1,6 +1,7 @@
+using System.Numerics;
 using Raylib_cs;
 
-namespace TuringFactory;
+namespace TuringFactory.src;
 
 static class TapeRenderer {
     public static void Draw(IReadOnlyDictionary<int, char> tape, int tapeHead, int previousTapeHead, float transitionProgress, int windowWidth, int windowHeight) {
@@ -23,6 +24,11 @@ static class TapeRenderer {
             Rectangle cell = new(x, viewY, cellSize, cellSize);
 
             Raylib.DrawRectangleRec(cell, isFilled ? Theme.ElementLight : Theme.ElementDark);
+
+            string symbol = isFilled ? "1" : "0";
+            Vector2 textSize = Raylib.MeasureTextEx(Theme.Font, symbol, 32f, 1f);
+            Vector2 textPosition = new(cell.X + (cell.Width - textSize.X) / 2f, cell.Y + (cell.Height - textSize.Y) / 2f);
+            Raylib.DrawTextEx(Theme.Font, symbol, textPosition, 32f, 1f, isFilled ? Theme.ElementDark : Theme.ElementLight);
         }
 
         for (int tapePosition = firstCell + 1; tapePosition <= lastCell; tapePosition++) {
@@ -30,7 +36,7 @@ static class TapeRenderer {
             bool rightFilled = tape.TryGetValue(tapePosition, out char rightValue) && rightValue == '1';
             float x = viewX + (tapePosition - tapeHead + visibleCells / 2) * cellSize + movementOffset;
             Color dividerColor = leftFilled && rightFilled ? Theme.ElementDark : Theme.ElementLight;
-            Raylib.DrawLineEx(new System.Numerics.Vector2(x, viewY), new System.Numerics.Vector2(x, viewY + cellSize), 2f, dividerColor);
+            Raylib.DrawLineEx(new Vector2(x, viewY), new Vector2(x, viewY + cellSize), 2f, dividerColor);
         }
 
         Rectangle headCell = new(viewX + visibleCells / 2 * cellSize + movementOffset, viewY, cellSize, cellSize);

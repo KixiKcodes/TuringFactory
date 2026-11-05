@@ -1,7 +1,7 @@
 using System.Numerics;
 using Raylib_cs;
 
-namespace TuringFactory;
+namespace TuringFactory.src;
 
 sealed class MachineEditorController(TransitionDiagramRenderer diagramRenderer, WorkspaceController workspaceController) {
     readonly TransitionDiagramRenderer diagramRenderer = diagramRenderer;
@@ -9,6 +9,8 @@ sealed class MachineEditorController(TransitionDiagramRenderer diagramRenderer, 
     char? selectedState;
     (char State, char ReadSymbol)? selectedTransition;
     char? transitionSource;
+    (char State, char ReadSymbol)? draggedSelfLoop;
+    Vector2 selfLoopDragStart;
 
     public char? SelectedState => selectedState;
     public (char State, char ReadSymbol)? SelectedTransition => selectedTransition;
@@ -30,6 +32,23 @@ sealed class MachineEditorController(TransitionDiagramRenderer diagramRenderer, 
 
         Vector2 worldPosition = Raylib.GetScreenToWorld2D(mousePosition, workspaceController.Camera);
         bool changed = false;
+
+        if (Raylib.IsMouseButtonPressed(MouseButton.Left) && selectedTransition.HasValue) {
+            (char State, char ReadSymbol)? loop = diagramRenderer.FindSelfLoopAtPosition(worldPosition);
+            if (loop.HasValue && selectedTransition == loop) {
+                draggedSelfLoop = loop;
+                selfLoopDragStart = worldPosition;
+            }
+        }
+        if (draggedSelfLoop.HasValue && Raylib.IsMouseButtonDown(MouseButton.Left)) {
+            if (Vector2.DistanceSquared(worldPosition, selfLoopDragStart) > 9f)
+                diagramRenderer.RotateSelfLoop(draggedSelfLoop.Value, worldPosition);
+            return false;
+        }
+        if (draggedSelfLoop.HasValue && Raylib.IsMouseButtonReleased(MouseButton.Left)) {
+            draggedSelfLoop = null;
+            return false;
+        }
 
         if (Raylib.IsMouseButtonPressed(MouseButton.Right)) {
             transitionSource = diagramRenderer.FindNodeAtPosition(worldPosition, machine.States);
@@ -64,7 +83,7 @@ sealed class MachineEditorController(TransitionDiagramRenderer diagramRenderer, 
                 selectedTransition = (control.Value.State, control.Value.ReadSymbol);
                 changed |= ToggleTransition(machine, control.Value);
             } else {
-                var transition = diagramRenderer.FindTransitionAtPosition(worldPosition);
+                (char State, char ReadSymbol)? transition = diagramRenderer.FindTransitionAtPosition(worldPosition);
                 selectedState = null;
                 selectedTransition = transition;
                 if (!transition.HasValue && doubleClick)

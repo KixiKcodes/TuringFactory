@@ -1,6 +1,6 @@
 using Raylib_cs;
 
-namespace TuringFactory;
+namespace TuringFactory.src;
 
 static class Theme {
     public static readonly Color Background = new(24, 25, 38);
@@ -29,7 +29,8 @@ static class Theme {
     public static Font Font { get; private set; }
 
     public static void LoadFont() {
-        Font = Raylib.LoadFontEx("resources/Sono-Regular.ttf", 72, null, 0);
+        Font = Raylib.LoadFontEx("resources/Nunito-Medium.ttf", 144, null, 0);
+        Raylib.SetTextureFilter(Font.Texture, TextureFilter.Bilinear);
     }
 
     public static void UnloadFont() {

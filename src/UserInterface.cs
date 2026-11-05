@@ -1,7 +1,7 @@
 using System.Numerics;
 using Raylib_cs;
 
-namespace TuringFactory;
+namespace TuringFactory.src;
 
 sealed class UserInterface {
     const float padding = 20f;
@@ -56,10 +56,10 @@ sealed class UserInterface {
     }
 
     public void Draw(string definition, MachineValidationResult validation, TuringMachineRuntime runtime, Layout layout) {
-        Vector2 titleSize = Raylib.MeasureTextEx(Theme.Font, definition, 28, 1);
+        Vector2 titleSize = Raylib.MeasureTextEx(Theme.Font, definition, 36, 1);
         Color statusColor = validation.IsValid ? Theme.ElementLight : Theme.Incomplete;
         Raylib.DrawTextEx(Theme.Font, definition, new Vector2(layout.WindowWidth / 2f - titleSize.X / 2f, padding), 28, 1, statusColor);
-        Raylib.DrawTextEx(Theme.Font, $"Steps: {runtime.StepCount}", new Vector2(padding, padding), 24, 1, Theme.ElementLight);
+        Raylib.DrawTextEx(Theme.Font, $"Steps: {runtime.StepCount}", new Vector2(padding, padding), 30, 1, Theme.ElementLight);
         if (!validation.IsValid)
             Raylib.DrawTextEx(Theme.Font, validation.Errors[0], new Vector2(layout.WindowWidth / 2f - 180, padding + 34), 18, 1, Theme.Incomplete);
 
@@ -71,7 +71,7 @@ sealed class UserInterface {
         DrawButton(layout.PlayButton, runtime.IsPlaying ? "Pause" : "Play", Theme.Font, playEnabled, playHovered);
         DrawButton(layout.ResetButton, "Reset", Theme.Font, true, resetHovered);
 
-        Raylib.DrawTextEx(Theme.Font, "Step Speed", new Vector2(layout.SpeedSlider.X, layout.SpeedSlider.Y - 25f), 18, 1, Theme.ElementLight);
+        Raylib.DrawTextEx(Theme.Font, "Step Speed", new Vector2(layout.SpeedSlider.X, layout.SpeedSlider.Y - 30f), 25, 1, Theme.ElementLight);
         Raylib.DrawRectangleRounded(layout.SpeedSlider, cornerRadius, 8, Theme.Panel);
         float sliderX = layout.SpeedSlider.X + speed * layout.SpeedSlider.Width;
         Color handleColor = sliderHovered || draggingSlider ? Theme.MouseHover : Theme.ElementLight;
@@ -84,7 +84,7 @@ sealed class UserInterface {
         Color textColor = enabled ? Theme.ElementDark : Theme.Panel;
 
         Raylib.DrawRectangleRounded(button, cornerRadius, 8, background);
-        Vector2 textSize = Raylib.MeasureTextEx(font, text, 24, 1);
-        Raylib.DrawTextEx(font, text, new Vector2(button.X + button.Width / 2f - textSize.X / 2f, button.Y + button.Height / 2f - textSize.Y / 2f), 24, 1, textColor);
+        Vector2 textSize = Raylib.MeasureTextEx(font, text, 30, 1);
+        Raylib.DrawTextEx(font, text, new Vector2(button.X + button.Width / 2f - textSize.X / 2f, button.Y + button.Height / 2f - textSize.Y / 2f), 30, 1, textColor);
     }
 }

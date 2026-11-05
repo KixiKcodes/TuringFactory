@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using Raylib_cs;
 
-namespace TuringFactory;
+namespace TuringFactory.src;
 
 class Program {
     public static void Main(string[] args) {
@@ -14,7 +14,7 @@ class Program {
 
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint);
         Raylib.InitWindow(1920, 1080, "Turing Factory");
-        Raylib.SetTargetFPS(120);
+        Raylib.SetTargetFPS(144);
         Theme.LoadFont();
 
         while (!Raylib.WindowShouldClose()) {

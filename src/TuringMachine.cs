@@ -1,4 +1,4 @@
-namespace TuringFactory;
+namespace TuringFactory.src;
 
 public enum MoveDirection {
     Left,
@@ -32,7 +32,7 @@ public sealed class TuringMachine {
             throw new ArgumentException("Machine definition cannot be empty.", nameof(input));
         
         string[] stateBlocks = input.Split('_', StringSplitOptions.RemoveEmptyEntries);
-        TuringMachine machine = new(false);
+        TuringMachine machine = new();
         for (int i = 0; i < stateBlocks.Length; i++) {
             char state = (char)('A' + i);
             machine.AddState(state);
@@ -46,8 +46,6 @@ public sealed class TuringMachine {
         return machine;
     }
 
-    private TuringMachine(bool createDefaultState) { }
-
     public void AddState(char state) {
         if (!_transitions.ContainsKey(state))
             _transitions[state] = [];
@@ -58,14 +56,14 @@ public sealed class TuringMachine {
             throw new FormatException($"Transition '{encodedTransition}' must be 3 characters.");
         AddState(state);
 
-        var writeSymbol = encodedTransition[0];
-        var direction = encodedTransition[1] switch {
+        char writeSymbol = encodedTransition[0];
+        MoveDirection direction = encodedTransition[1] switch {
             'L' => MoveDirection.Left,
             'R' => MoveDirection.Right,
             _ => throw new FormatException($"Invalid direction '{encodedTransition[1]}' in transition '{encodedTransition}'.")
         };
 
-        var nextState = encodedTransition[2];
+        char nextState = encodedTransition[2];
         if (nextState != HaltState && !char.IsUpper(nextState))
             throw new FormatException($"Invalid next state '{nextState}'.");
         SetTransition(state, readSymbol, new Transition(readSymbol, writeSymbol, direction, nextState));
@@ -83,7 +81,7 @@ public sealed class TuringMachine {
     }
 
     public void RemoveTransition(char state, char readSymbol) {
-        if (_transitions.TryGetValue(state, out var stateTransitions))
+        if (_transitions.TryGetValue(state, out Dictionary<char, Transition>? stateTransitions))
             stateTransitions.Remove(readSymbol);
     }
 
@@ -104,7 +102,7 @@ public sealed class TuringMachine {
         foreach (char oldState in remainingStates) {
             char newState = renames.GetValueOrDefault(oldState, oldState);
             Dictionary<char, Transition> transitions = [];
-            foreach (var pair in _transitions[oldState]) {
+            foreach (KeyValuePair<char, Transition> pair in _transitions[oldState]) {
                 if (pair.Value.NextState == state)
                     continue;
                 char nextState = renames.GetValueOrDefault(pair.Value.NextState, pair.Value.NextState);
@@ -114,14 +112,14 @@ public sealed class TuringMachine {
         }
 
         _transitions.Clear();
-        foreach (var pair in renamedTransitions)
+        foreach (KeyValuePair<char, Dictionary<char, Transition>> pair in renamedTransitions)
             _transitions[pair.Key] = pair.Value;
         LastStateRenames = renames;
         return true;
     }
 
     public bool SwapTransitions(char state) {
-        if (!_transitions.TryGetValue(state, out var transitions) || !transitions.TryGetValue('0', out Transition? zero) || !transitions.TryGetValue('1', out Transition? one))
+        if (!_transitions.TryGetValue(state, out Dictionary<char, Transition>? transitions) || !transitions.TryGetValue('0', out Transition? zero) || !transitions.TryGetValue('1', out Transition? one))
             return false;
 
         transitions['0'] = one with { ReadValue = '0' };
@@ -134,12 +132,12 @@ public sealed class TuringMachine {
         if (!_transitions.ContainsKey(StartState))
             errors.Add("Start state A is missing.");
 
-        foreach (var state in _transitions.Keys.Order())
+        foreach (char state in _transitions.Keys.Order())
             foreach (char readSymbol in new[] { '0', '1' })
                 if (!_transitions[state].ContainsKey(readSymbol))
                     errors.Add($"State {state} is missing a transition for {readSymbol}.");
 
-        foreach (var stateTransitions in _transitions.Values)
+        foreach (Dictionary<char, Transition>? stateTransitions in _transitions.Values)
             foreach (Transition transition in stateTransitions.Values)
                 if (transition.NextState != HaltState && !_transitions.ContainsKey(transition.NextState))
                     errors.Add($"Transition to missing state {transition.NextState}.");
@@ -159,7 +157,7 @@ public sealed class TuringMachine {
     }
 
     public bool TryGetTransition(char state, char readSymbol, out Transition? transition) {
-        if (_transitions.TryGetValue(state, out var stateTransitions) && stateTransitions.TryGetValue(readSymbol, out var t)) {
+        if (_transitions.TryGetValue(state, out Dictionary<char, Transition>? stateTransitions) && stateTransitions.TryGetValue(readSymbol, out Transition? t)) {
             transition = t;
             return true;
         }

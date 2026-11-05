@@ -1,6 +1,6 @@
 using Raylib_cs;
 
-namespace TuringFactory;
+namespace TuringFactory.src;
 
 static class TapeHistoryRenderer {
     public readonly record struct TapeHistorySnapshot(
@@ -13,6 +13,8 @@ static class TapeHistoryRenderer {
         const float margin = 20f;
         const float viewWidth = 260f;
         const int initialVisibleCells = 15;
+        const int outlineFadeStart = 60;
+        const int outlineFadeDuration = 60;
 
         float viewX = windowWidth - viewWidth - margin;
         float viewY = margin;
@@ -38,12 +40,17 @@ static class TapeHistoryRenderer {
             float y = viewY + row * rowHeight;
 
             foreach (KeyValuePair<int, char> cell in snapshot.Tape) {
-                if (cell.Value != '1')
-                    continue;
                 float x = contentX + cell.Key * cellSize;
                 Color color = GetStateColor(snapshot.FillStates[cell.Key], states);
+                Rectangle cellRectangle = new(x, y, cellSize, rowHeight);
 
-                Raylib.DrawRectangleRec(new Rectangle(x, y, cellSize, rowHeight), color);
+                if (cell.Value == '1')
+                    Raylib.DrawRectangleRec(cellRectangle, color);
+                else {
+                    float fade = Math.Clamp((outlineFadeStart + outlineFadeDuration - row) / (float)outlineFadeDuration, 0.2f, 1f);
+                    color.A = (byte)(fade * 255f);
+                    Raylib.DrawRectangleLinesEx(cellRectangle, 2f, color);
+                }
             }
         }
 

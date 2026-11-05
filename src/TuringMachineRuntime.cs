@@ -1,7 +1,7 @@
-namespace TuringFactory;
+namespace TuringFactory.src;
 
 sealed class TuringMachineRuntime {
-    const float slowestStepDuration = 0.4f;
+    const float slowestStepDuration = 1.0f;
     const float fastestStepDuration = 0.01f;
 
     readonly TuringMachine machine;
@@ -72,7 +72,11 @@ sealed class TuringMachineRuntime {
     }
 
     float GetStepDuration() {
-        return slowestStepDuration - Speed * (slowestStepDuration - fastestStepDuration);
+        float minSpeed = 1f / slowestStepDuration;
+        float maxSpeed = 1f / fastestStepDuration;
+        float stepsPerSecond = minSpeed * MathF.Pow(maxSpeed / minSpeed, Speed);
+
+        return 1f / stepsPerSecond;
     }
 
     void AddHistorySnapshot() {
@@ -93,8 +97,8 @@ sealed class TuringMachineRuntime {
             tape[TapeHead] = '1';
             tapeFillStates[TapeHead] = CurrentState;
         } else {
-            tape.Remove(TapeHead);
-            tapeFillStates.Remove(TapeHead);
+            tape[TapeHead] = '0';
+            tapeFillStates[TapeHead] = CurrentState;
         }
 
         TapeHead += transition.Direction == MoveDirection.Right ? 1 : -1;

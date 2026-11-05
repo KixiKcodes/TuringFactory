@@ -1,7 +1,7 @@
 using System.Numerics;
 using Raylib_cs;
 
-namespace TuringFactory;
+namespace TuringFactory.src;
 
 sealed class WorkspaceController(TransitionDiagramRenderer diagramRenderer) {
     readonly TransitionDiagramRenderer diagramRenderer = diagramRenderer;
