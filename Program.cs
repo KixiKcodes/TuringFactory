@@ -15,7 +15,7 @@ class Program {
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint);
         Raylib.InitWindow(1920, 1080, "Turing Factory");
         Raylib.SetTargetFPS(120);
-        Font font = Raylib.LoadFontEx("resources/Sono-Regular.ttf", 72, null, 0);
+        Theme.LoadFont();
 
         while (!Raylib.WindowShouldClose()) {
             float windowWidth = Raylib.GetScreenWidth();
@@ -38,15 +38,15 @@ class Program {
             runtime.Update(Raylib.GetFrameTime());
 
             Raylib.BeginDrawing();
-            Raylib.ClearBackground(Color.RayWhite);
-            workspaceController.Draw(machine.States, runtime.CurrentState, runtime.StepCount, runtime.PreviousState, runtime.ActiveTransition, runtime.TransitionProgress, font, editor, mousePosition);
+            Raylib.ClearBackground(Theme.Background);
+            workspaceController.Draw(machine.States, runtime.CurrentState, runtime.StepCount, runtime.PreviousState, runtime.ActiveTransition, runtime.TransitionProgress, editor, mousePosition);
             TapeRenderer.Draw(runtime.Tape, runtime.TapeHead, runtime.PreviousTapeHead, runtime.TransitionProgress, (int)windowWidth, (int)windowHeight);
             TapeHistoryRenderer.Draw(runtime.TapeHistory, machine.States, (int)windowWidth, (int)windowHeight);
-            userInterface.Draw(machine.ToDefinitionString(), validation, runtime, layout, font);
+            userInterface.Draw(machine.ToDefinitionString(), validation, runtime, layout);
             Raylib.EndDrawing();
         }
 
-        Raylib.UnloadFont(font);
+        Theme.UnloadFont();
         Raylib.CloseWindow();
     }
 }

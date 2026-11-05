@@ -26,9 +26,9 @@ sealed class WorkspaceController(TransitionDiagramRenderer diagramRenderer) {
         UpdateNodeDragging(mousePosition, mouseInWorkspace, states);
     }
 
-    public void Draw(IReadOnlyCollection<char> states, char currentState, int stepCount, char? previousState, Transition? activeTransition, float transitionProgress, Font font, MachineEditorController editor, Vector2 mousePosition) {
+    public void Draw(IReadOnlyCollection<char> states, char currentState, int stepCount, char? previousState, Transition? activeTransition, float transitionProgress, MachineEditorController editor, Vector2 mousePosition) {
         Raylib.BeginMode2D(camera);
-        diagramRenderer.Draw(states, currentState, stepCount, previousState, activeTransition, transitionProgress, font, editor.SelectedState, editor.SelectedTransition);
+        diagramRenderer.Draw(states, currentState, stepCount, previousState, activeTransition, transitionProgress, editor.SelectedState, editor.SelectedTransition);
         if (editor.TransitionSource is char source) {
             Vector2 worldMousePosition = Raylib.GetScreenToWorld2D(mousePosition, camera);
             diagramRenderer.DrawLinkPreview(source, worldMousePosition);

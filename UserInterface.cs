@@ -6,11 +6,11 @@ namespace TuringFactory;
 sealed class UserInterface {
     const float padding = 20f;
     const float buttonHeight = 45f;
-    const float buttonWidth = 110f;
     const float buttonGap = 10f;
     const float sliderWidth = 300f;
     const float sliderHeight = 8f;
-
+    const float buttonWidth = (sliderWidth - buttonGap) / 2f;
+    const float cornerRadius = 0.35f;
     bool draggingSlider;
     float speed = 0.5f;
     public float Speed => speed;
@@ -55,28 +55,36 @@ sealed class UserInterface {
         return new(togglePlay, reset);
     }
 
-    public void Draw(string definition, MachineValidationResult validation, TuringMachineRuntime runtime, Layout layout, Font font) {
-        Vector2 titleSize = Raylib.MeasureTextEx(font, definition, 28, 1);
-        Color statusColor = validation.IsValid ? Color.DarkGreen : Color.Red;
-        Raylib.DrawTextEx(font, definition, new Vector2(layout.WindowWidth / 2f - titleSize.X / 2f, padding), 28, 1, statusColor);
-        Raylib.DrawTextEx(font, $"Steps: {runtime.StepCount}", new Vector2(padding, padding), 24, 1, Color.Black);
+    public void Draw(string definition, MachineValidationResult validation, TuringMachineRuntime runtime, Layout layout) {
+        Vector2 titleSize = Raylib.MeasureTextEx(Theme.Font, definition, 28, 1);
+        Color statusColor = validation.IsValid ? Theme.ElementLight : Theme.Incomplete;
+        Raylib.DrawTextEx(Theme.Font, definition, new Vector2(layout.WindowWidth / 2f - titleSize.X / 2f, padding), 28, 1, statusColor);
+        Raylib.DrawTextEx(Theme.Font, $"Steps: {runtime.StepCount}", new Vector2(padding, padding), 24, 1, Theme.ElementLight);
         if (!validation.IsValid)
-            Raylib.DrawTextEx(font, validation.Errors[0], new Vector2(layout.WindowWidth / 2f - 180, padding + 34), 18, 1, Color.Red);
+            Raylib.DrawTextEx(Theme.Font, validation.Errors[0], new Vector2(layout.WindowWidth / 2f - 180, padding + 34), 18, 1, Theme.Incomplete);
 
-        DrawButton(layout.PlayButton, runtime.IsPlaying ? "Pause" : "Play", font);
-        DrawButton(layout.ResetButton, "Reset", font);
+        bool playEnabled = validation.IsValid;
+        bool playHovered = playEnabled && Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), layout.PlayButton);
+        bool resetHovered = Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), layout.ResetButton);
+        bool sliderHovered = Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), layout.SpeedSlider);
 
-        Raylib.DrawRectangleRec(layout.SpeedSlider, Color.LightGray);
-        Raylib.DrawRectangleLinesEx(layout.SpeedSlider, 2f, Color.DarkGray);
+        DrawButton(layout.PlayButton, runtime.IsPlaying ? "Pause" : "Play", Theme.Font, playEnabled, playHovered);
+        DrawButton(layout.ResetButton, "Reset", Theme.Font, true, resetHovered);
+
+        Raylib.DrawTextEx(Theme.Font, "Step Speed", new Vector2(layout.SpeedSlider.X, layout.SpeedSlider.Y - 25f), 18, 1, Theme.ElementLight);
+        Raylib.DrawRectangleRounded(layout.SpeedSlider, cornerRadius, 8, Theme.Panel);
         float sliderX = layout.SpeedSlider.X + speed * layout.SpeedSlider.Width;
-        Raylib.DrawCircle((int)sliderX, (int)(layout.SpeedSlider.Y + layout.SpeedSlider.Height / 2f), 9, Color.DarkGray);
+        Color handleColor = sliderHovered || draggingSlider ? Theme.MouseHover : Theme.ElementLight;
+        Raylib.DrawCircle((int)sliderX, (int)(layout.SpeedSlider.Y + layout.SpeedSlider.Height / 2f), 9, handleColor);
 
     }
 
-    static void DrawButton(Rectangle button, string text, Font font) {
-        Raylib.DrawRectangleRec(button, Color.LightGray);
-        Raylib.DrawRectangleLinesEx(button, 2f, Color.DarkGray);
+    static void DrawButton(Rectangle button, string text, Font font, bool enabled, bool hovered) {
+        Color background = !enabled ? Theme.Innactive : hovered ? Theme.MouseHover : Theme.ElementLight;
+        Color textColor = enabled ? Theme.ElementDark : Theme.Panel;
+
+        Raylib.DrawRectangleRounded(button, cornerRadius, 8, background);
         Vector2 textSize = Raylib.MeasureTextEx(font, text, 24, 1);
-        Raylib.DrawTextEx(font, text, new Vector2(button.X + button.Width / 2f - textSize.X / 2f, button.Y + button.Height / 2f - textSize.Y / 2f), 24, 1, Color.Black);
+        Raylib.DrawTextEx(font, text, new Vector2(button.X + button.Width / 2f - textSize.X / 2f, button.Y + button.Height / 2f - textSize.Y / 2f), 24, 1, textColor);
     }
 }

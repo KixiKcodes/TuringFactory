@@ -12,7 +12,7 @@ static class TapeRenderer {
         Rectangle tapeView = new(viewX, viewY, viewWidth, cellSize);
         float movementOffset = (tapeHead - previousTapeHead) * cellSize * (1f - transitionProgress);
 
-        Raylib.DrawRectangleRec(tapeView, Color.RayWhite);
+        Raylib.DrawRectangleRec(tapeView, Theme.ElementLight);
         Raylib.BeginScissorMode((int)tapeView.X, (int)tapeView.Y, (int)tapeView.Width, (int)tapeView.Height);
 
         int firstCell = tapeHead - visibleCells / 2 - 1;
@@ -22,11 +22,21 @@ static class TapeRenderer {
             bool isFilled = tape.TryGetValue(tapePosition, out char value) && value == '1';
             Rectangle cell = new(x, viewY, cellSize, cellSize);
 
-            Raylib.DrawRectangleRec(cell, isFilled ? Color.Black : Color.RayWhite);
-            Raylib.DrawRectangleLinesEx(cell, tapePosition == tapeHead ? 5f : 2f, tapePosition == tapeHead ? Color.Gold : Color.DarkGray);
+            Raylib.DrawRectangleRec(cell, isFilled ? Theme.ElementLight : Theme.ElementDark);
         }
 
+        for (int tapePosition = firstCell + 1; tapePosition <= lastCell; tapePosition++) {
+            bool leftFilled = tape.TryGetValue(tapePosition - 1, out char leftValue) && leftValue == '1';
+            bool rightFilled = tape.TryGetValue(tapePosition, out char rightValue) && rightValue == '1';
+            float x = viewX + (tapePosition - tapeHead + visibleCells / 2) * cellSize + movementOffset;
+            Color dividerColor = leftFilled && rightFilled ? Theme.ElementDark : Theme.ElementLight;
+            Raylib.DrawLineEx(new System.Numerics.Vector2(x, viewY), new System.Numerics.Vector2(x, viewY + cellSize), 2f, dividerColor);
+        }
+
+        Rectangle headCell = new(viewX + visibleCells / 2 * cellSize + movementOffset, viewY, cellSize, cellSize);
+        Raylib.DrawRectangleLinesEx(headCell, 5f, Theme.Active);
+
         Raylib.EndScissorMode();
-        Raylib.DrawRectangleLinesEx(tapeView, 2f, Color.DarkGray);
+        Raylib.DrawRectangleLinesEx(tapeView, 2f, Theme.ElementLight);
     }
 }

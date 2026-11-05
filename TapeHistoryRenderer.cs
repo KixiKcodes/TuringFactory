@@ -30,7 +30,7 @@ static class TapeHistoryRenderer {
         float rowHeight = MathF.Min(cellSize, viewHeight / history.Count);
         float contentX = viewX - minimumPosition * cellSize;
 
-        Raylib.DrawRectangle((int)viewX, (int)viewY, (int)viewWidth, (int)viewHeight, Color.RayWhite);
+        Raylib.DrawRectangle((int)viewX, (int)viewY, (int)viewWidth, (int)viewHeight, Theme.Panel);
         Raylib.BeginScissorMode((int)viewX, (int)viewY, (int)viewWidth, (int)viewHeight);
 
         for (int row = 0; row < history.Count; row++) {
@@ -48,12 +48,11 @@ static class TapeHistoryRenderer {
         }
 
         Raylib.EndScissorMode();
-        Raylib.DrawRectangleLines((int)viewX, (int)viewY, (int)viewWidth, (int)viewHeight, Color.DarkGray);
+        Raylib.DrawRectangleLines((int)viewX, (int)viewY, (int)viewWidth, (int)viewHeight, Theme.ElementDark);
     }
 
     static Color GetStateColor(char state, IReadOnlyCollection<char> states) {
         int index = states.ToList().IndexOf(state);
-        float hue = index * 360f / Math.Max(states.Count, 1);
-        return Raylib.ColorFromHSV(hue, 0.65f, 0.95f);
+        return Theme.StateColors[index % Theme.StateColors.Length];
     }
 }
