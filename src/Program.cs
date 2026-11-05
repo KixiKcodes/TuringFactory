@@ -17,6 +17,7 @@ class Program {
 
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint);
         Raylib.InitWindow(1920, 1080, "Turing Factory");
+        Raylib.SetWindowPosition(0, 0);
         if (!Raylib.IsWindowReady())
             throw new InvalidOperationException("Raylib failed to initialize the window.");
         Raylib.SetTargetFPS(144);
