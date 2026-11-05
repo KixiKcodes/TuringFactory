@@ -13,17 +13,17 @@ static class Theme {
     public static readonly Color Incomplete = new(237, 135, 150);
     public static readonly Color MouseHover = new(165, 173, 203);
     public static readonly Color[] StateColors = [
-        new(245, 189, 230),
-        new(198, 160, 246),
-        new(238, 153, 160),
-        new(245, 169, 127),
-        new(238, 212, 159),
-        new(166, 218, 149),
-        new(139, 213, 202),
-        new(125, 196, 228),
-        new(138, 173, 244),
-        new(183, 189, 248),
-        new(240, 198, 198)
+        new (238, 153, 160), // red
+        new (138, 173, 244), // blue
+        new (166, 218, 149), // green
+        new (238, 212, 159), // yellow
+        new (245, 169, 127), // orange
+        new (139, 213, 202), // teal
+        new (245, 189, 230), // pink
+        new (125, 196, 228), // cyan
+        new (198, 160, 246), // magenta
+        new (240, 198, 198), // beige
+        new (183, 189, 248)  // purple
     ];
 
     public static Font Font { get; private set; }

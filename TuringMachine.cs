@@ -121,9 +121,7 @@ public sealed class TuringMachine {
     }
 
     public bool SwapTransitions(char state) {
-        if (!_transitions.TryGetValue(state, out var transitions) ||
-            !transitions.TryGetValue('0', out Transition? zero) ||
-            !transitions.TryGetValue('1', out Transition? one))
+        if (!_transitions.TryGetValue(state, out var transitions) || !transitions.TryGetValue('0', out Transition? zero) || !transitions.TryGetValue('1', out Transition? one))
             return false;
 
         transitions['0'] = one with { ReadValue = '0' };

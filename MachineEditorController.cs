@@ -41,6 +41,7 @@ sealed class MachineEditorController(TransitionDiagramRenderer diagramRenderer, 
             char? target = diagramRenderer.FindNodeAtPosition(worldPosition, machine.States);
             if (target.HasValue) {
                 char readSymbol = machine.TryGetTransition(transitionSource.Value, '0', out _) ? '1' : '0';
+
                 machine.SetTransition(transitionSource.Value, readSymbol, new Transition(readSymbol, '0', MoveDirection.Right, target.Value));
                 selectedTransition = (transitionSource.Value, readSymbol);
                 selectedState = null;
