@@ -12,6 +12,11 @@ public sealed record Transition(
     char NextState
 );
 
+public sealed record MachineValidationResult(
+    bool IsValid,
+    IReadOnlyList<string> Errors
+);
+
 public sealed class TuringMachine {
     public const char HaltState = 'Z';
     public char StartState { get; } = 'A';
@@ -172,5 +177,3 @@ public sealed class TuringMachine {
         return false;
     }
 }
-
-public sealed record MachineValidationResult(bool IsValid, IReadOnlyList<string> Errors);

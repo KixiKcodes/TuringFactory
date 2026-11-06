@@ -36,10 +36,13 @@ class Program {
             Vector2 mousePosition = Raylib.GetMousePosition();
             UserInterface.Layout layout = userInterface.GetLayout(windowWidth, windowHeight);
 
-            workspaceController.Update(mousePosition, layout.Workspace, machine.States);
-            bool modelChanged = editor.Update(mousePosition, layout, machine);
             string definition = machine.ToDefinitionString();
             UserInterface.Actions actions = userInterface.Update(mousePosition, layout, definition);
+            bool modelChanged = false;
+            if (!userInterface.IsEditingDefinition) {
+                workspaceController.Update(mousePosition, layout.Workspace, machine.States);
+                modelChanged = editor.Update(mousePosition, layout, machine);
+            }
             bool definitionChanged = false;
             if (actions.DefinitionSubmission is string submittedDefinition) {
                 try {
@@ -79,7 +82,8 @@ class Program {
         double cpuMilliseconds = (process.TotalProcessorTime - previousCpuTime).TotalMilliseconds;
         double cpuPercent = elapsedMilliseconds > 0 ? cpuMilliseconds / elapsedMilliseconds / Environment.ProcessorCount * 100 : 0;
         double memoryMegabytes = process.WorkingSet64 / 1024d / 1024d;
+        string log = $"FPS: {Raylib.GetFPS()} | " + $"CPU: {cpuPercent:F1}% | " + $"Memory: {memoryMegabytes:F1} MB";
 
-        Console.WriteLine($"FPS: {Raylib.GetFPS()} | " + $"CPU: {cpuPercent:F1}% | " + $"Memory: {memoryMegabytes:F1} MB");
+        Raylib.DrawTextEx(Theme.Font, log, new Vector2(0f, 0f), 24, 1, Theme.ElementLight);
     }
 }

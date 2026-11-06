@@ -1,5 +1,4 @@
 using System.Numerics;
-using System.Runtime.InteropServices;
 using Raylib_cs;
 
 namespace TuringFactory.src;
@@ -16,11 +15,10 @@ sealed class UserInterface {
     const float minimumWorkspaceWidth = 420f;
     const float cornerRadius = 0.35f;
     bool draggingSlider;
-    bool editingDefinition;
-    string definitionText = string.Empty;
-    string? definitionError;
+    readonly TextBox definitionTextBox = new();
     float speed = 0.5f;
     public float Speed => speed;
+    public bool IsEditingDefinition => definitionTextBox.IsEditing;
 
     public readonly record struct Layout(
         float WindowWidth,
@@ -62,37 +60,11 @@ sealed class UserInterface {
     }
 
     public Actions Update(Vector2 mousePosition, Layout layout, string definition) {
-        if (!editingDefinition)
-            definitionText = definition;
-
-        string? definitionSubmission = null;
-        if (Raylib.IsMouseButtonPressed(MouseButton.Left) && Raylib.CheckCollisionPointRec(mousePosition, layout.DefinitionArea)) {
-            editingDefinition = true;
-            definitionText = definition;
-            definitionError = null;
-        }
-
-        if (editingDefinition) {
-            bool controlPressed = Raylib.IsKeyDown(KeyboardKey.LeftControl) || Raylib.IsKeyDown(KeyboardKey.RightControl);
-            if (controlPressed && Raylib.IsKeyPressed(KeyboardKey.V))
-                definitionText += FilterDefinitionText(GetClipboardText());
-            if (Raylib.IsKeyPressed(KeyboardKey.Backspace) && definitionText.Length > 0)
-                definitionText = definitionText[..^1];
-            if (Raylib.IsKeyPressed(KeyboardKey.Escape)) {
-                editingDefinition = false;
-                definitionError = null;
-                definitionText = definition;
-            } else if (Raylib.IsKeyPressed(KeyboardKey.Enter) && !string.IsNullOrWhiteSpace(definitionText)) {
-                definitionSubmission = definitionText;
-                editingDefinition = false;
-                definitionError = null;
-            }
-
-            int pressedCharacter;
-            while ((pressedCharacter = Raylib.GetCharPressed()) > 0)
-                if (pressedCharacter >= 32 && pressedCharacter <= 126)
-                    definitionText += (char)pressedCharacter;
-        }
+        definitionTextBox.Sync(definition);
+        Rectangle definitionBounds = GetDefinitionBounds(definition, layout);
+        if (Raylib.IsMouseButtonPressed(MouseButton.Left) && Raylib.CheckCollisionPointRec(mousePosition, definitionBounds))
+            definitionTextBox.BeginEditing(definition, mousePosition, definitionBounds, Theme.Font, 28f * layout.Scale);
+        string? definitionSubmission = definitionTextBox.Update();
 
         float sliderHandleX = layout.SpeedSlider.X + speed * layout.SpeedSlider.Width;
         Vector2 sliderHandlePosition = new(sliderHandleX, layout.SpeedSlider.Y + layout.SpeedSlider.Height / 2f);
@@ -112,28 +84,18 @@ sealed class UserInterface {
     }
 
     public void RejectDefinition(string error) {
-        editingDefinition = true;
-        definitionError = error;
+        definitionTextBox.Reject(error);
     }
 
     public void Draw(string definition, MachineValidationResult validation, TuringMachineRuntime runtime, Layout layout) {
         float padding = basePadding * layout.Scale;
         float titleSizeValue = 28f * layout.Scale;
         float bodyTextSize = 30f * layout.Scale;
-        string displayedDefinition = editingDefinition ? definitionText : definition;
-        Vector2 titleSize = Raylib.MeasureTextEx(Theme.Font, displayedDefinition, titleSizeValue, 1);
-        Color statusColor = validation.IsValid && definitionError is null ? Theme.ElementLight : Theme.Incomplete;
-        Vector2 titlePosition = new(layout.WindowWidth / 2f - titleSize.X / 2f, padding);
-        if (editingDefinition) {
-            Rectangle titleBox = new(titlePosition.X - 8f * layout.Scale, titlePosition.Y - 4f * layout.Scale,
-                titleSize.X + 16f * layout.Scale, titleSize.Y + 8f * layout.Scale);
-            Raylib.DrawRectangleLinesEx(titleBox, MathF.Max(1f, 2f * layout.Scale), Theme.MouseHover);
-        }
-        Raylib.DrawTextEx(Theme.Font, displayedDefinition, titlePosition, titleSizeValue, 1, statusColor);
-        if (editingDefinition)
-            Raylib.DrawLineEx(new(titlePosition.X + titleSize.X + 2f * layout.Scale, titlePosition.Y), new(titlePosition.X + titleSize.X + 2f * layout.Scale, titlePosition.Y + titleSize.Y), MathF.Max(1f, 2f * layout.Scale), Theme.MouseHover);
+        definitionTextBox.Sync(definition);
+        Color statusColor = validation.IsValid && definitionTextBox.Error is null ? Theme.ElementLight : Theme.Incomplete;
+        definitionTextBox.Draw(Theme.Font, layout.WindowWidth / 2f, padding, titleSizeValue, statusColor, layout.Scale);
         Raylib.DrawTextEx(Theme.Font, $"Steps: {runtime.StepCount}", new Vector2(padding, padding), bodyTextSize, 1, Theme.ElementLight);
-        string? error = definitionError ?? (!validation.IsValid ? validation.Errors[0] : null);
+        string? error = definitionTextBox.Error ?? (!validation.IsValid ? validation.Errors[0] : null);
         if (error is not null)
             Raylib.DrawTextEx(Theme.Font, error, new Vector2(layout.WindowWidth / 2f - 180f * layout.Scale, padding + 34f * layout.Scale), 18f * layout.Scale, 1, Theme.Incomplete);
 
@@ -152,9 +114,12 @@ sealed class UserInterface {
         Raylib.DrawCircle((int)sliderX, (int)(layout.SpeedSlider.Y + layout.SpeedSlider.Height / 2f), (int)(9f * layout.Scale), handleColor);
     }
 
-    static string FilterDefinitionText(string text) => new([.. text.Where(character => character >= 32 && character <= 126)]);
-
-    static unsafe string GetClipboardText() => Marshal.PtrToStringAnsi((IntPtr)Raylib.GetClipboardText()) ?? string.Empty;
+    static Rectangle GetDefinitionBounds(string definition, Layout layout) {
+        float titleSize = 28f * layout.Scale;
+        Vector2 size = Raylib.MeasureTextEx(Theme.Font, definition, titleSize, 1);
+        return new(layout.WindowWidth / 2f - size.X / 2f - 8f * layout.Scale, 0f,
+            size.X + 16f * layout.Scale, 70f * layout.Scale);
+    }
 
     static void DrawButton(Rectangle button, string text, Font font, bool enabled, bool hovered) {
         Color background = !enabled ? Theme.Innactive : hovered ? Theme.MouseHover : Theme.ElementLight;

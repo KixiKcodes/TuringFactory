@@ -267,13 +267,18 @@ class TransitionDiagramRenderer(TuringMachine machine) {
         List<char> stateList = [.. states];
         char? highlightedState = transitionProgress < 1f && previousState.HasValue ? previousState : currentState;
         foreach (char state in states) {
+            const float circleRadius = 40;
             Vector2 pos = Positions[state];
             Color color = stepCount > 0 && highlightedState == state ? Theme.Active : GetStateColor(state, stateList);
 
-            Raylib.DrawCircle((int)pos.X, (int)pos.Y, 40, color);
+            Raylib.DrawCircle((int)pos.X, (int)pos.Y, circleRadius, color);
             if (selectedState == state)
-                Raylib.DrawCircleLines((int)pos.X, (int)pos.Y, 46, Theme.Selected);
-            Raylib.DrawTextEx(Theme.Font, state.ToString(), new Vector2(pos.X - 13, pos.Y - 23), 50, 1, Theme.ElementDark);
+                Raylib.DrawCircleLines((int)pos.X, (int)pos.Y, circleRadius + 6, Theme.Selected);
+
+            float textSizeValue = MathF.Max(1f, circleRadius * 2 * 0.66f);
+            Vector2 textSize = Raylib.MeasureTextEx(Theme.Font, state.ToString(), textSizeValue, 1);
+            Vector2 textPosition = new(pos.X - textSize.X / 2f - 1f, pos.Y - textSize.Y / 2f + 1f);
+            Raylib.DrawTextEx(Theme.Font, state.ToString(), textPosition, textSizeValue, 1, Theme.ElementDark);
         }
 
         bool haltIsHighlighted = stepCount > 0 && highlightedState == TuringMachine.HaltState;

@@ -11,8 +11,6 @@ static class TapeHistoryRenderer {
 
     public static void Draw(IReadOnlyList<TapeHistorySnapshot> history, IReadOnlyCollection<char> states, UserInterface.Layout layout) {
         const int initialVisibleCells = 15;
-        const int outlineFadeStart = 60;
-        const int outlineFadeDuration = 60;
 
         Rectangle panel = layout.HistoryPanel;
         float viewX = panel.X;
@@ -47,9 +45,8 @@ static class TapeHistoryRenderer {
                 if (cell.Value == '1')
                     Raylib.DrawRectangleRec(cellRectangle, color);
                 else {
-                    float fade = Math.Clamp((outlineFadeStart + outlineFadeDuration - row) / (float)outlineFadeDuration, 0.2f, 1f);
-                    color.A = (byte)(fade * 255f);
-                    Raylib.DrawRectangleLinesEx(cellRectangle, MathF.Max(1f, 2f * layout.Scale), color);
+                    color.A = 128; // half opacity
+                    Raylib.DrawRectangleRec(cellRectangle, color);
                 }
             }
         }
