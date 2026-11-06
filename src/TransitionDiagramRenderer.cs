@@ -63,6 +63,19 @@ class TransitionDiagramRenderer(TuringMachine machine) {
         }
     }
 
+    public void SwapSelfLoopAngles(char state) {
+        bool hasZeroAngle = selfLoopAngles.TryGetValue((state, '0'), out float zeroAngle);
+        bool hasOneAngle = selfLoopAngles.TryGetValue((state, '1'), out float oneAngle);
+        if (hasZeroAngle)
+            selfLoopAngles[(state, '1')] = zeroAngle;
+        else
+            selfLoopAngles.Remove((state, '1'));
+        if (hasOneAngle)
+            selfLoopAngles[(state, '0')] = oneAngle;
+        else
+            selfLoopAngles.Remove((state, '0'));
+    }
+
     public TransitionHit? FindTransitionControlAtPosition(Vector2 mousePosition) {
         const float markerHitDistance = 12f;
         const float labelHitDistance = 25f;
@@ -329,7 +342,7 @@ class TransitionDiagramRenderer(TuringMachine machine) {
             Raylib.DrawLineEx(points[i], points[i + 1], 3f, isActive ? Theme.Active : isSelected ? Theme.Selected : Theme.Innactive);
 
         if (isActive && transitionProgress < 1f)
-            Raylib.DrawCircleV(points[(int)(transitionProgress * (points.Length - 1))], 10f, Theme.Active);
+            Raylib.DrawCircleV(GetPointAtPathProgress(points, transitionProgress), 10f, Theme.Active);
 
         Vector2 startDirection = Vector2.Normalize(points[1] - points[0]);
         Vector2 endDirection = Vector2.Normalize(points[^1] - points[^2]);
@@ -343,6 +356,24 @@ class TransitionDiagramRenderer(TuringMachine machine) {
         string directionLabel = edge.Transition.Direction == MoveDirection.Left ? "L" : "R";
 
         labels.Add(new TransitionLabel(labelPosition, directionLabel, isActive, isSelected));
+    }
+
+    static Vector2 GetPointAtPathProgress(Vector2[] points, float progress) {
+        float totalLength = 0f;
+        for (int i = 1; i < points.Length; i++)
+            totalLength += Vector2.Distance(points[i - 1], points[i]);
+
+        float targetLength = totalLength * Math.Clamp(progress, 0f, 1f);
+        for (int i = 1; i < points.Length; i++) {
+            Vector2 start = points[i - 1];
+            Vector2 end = points[i];
+            float segmentLength = Vector2.Distance(start, end);
+            if (targetLength <= segmentLength)
+                return Vector2.Lerp(start, end, segmentLength > 0f ? targetLength / segmentLength : 0f);
+            targetLength -= segmentLength;
+        }
+
+        return points[^1];
     }
 
     static void DrawQuadraticCurve(Vector2 start, Vector2 control, Vector2 end, Transition transition, bool isActive, bool isSelected, float transitionProgress,

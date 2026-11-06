@@ -51,6 +51,13 @@ public sealed class TuringMachine {
             _transitions[state] = [];
     }
 
+    public void ReplaceWith(TuringMachine source) {
+        _transitions.Clear();
+        foreach (KeyValuePair<char, Dictionary<char, Transition>> state in source._transitions)
+            _transitions[state.Key] = new(state.Value);
+        LastStateRenames = new Dictionary<char, char>();
+    }
+
     public void AddTransition(char state, char readSymbol, string encodedTransition) {
         if (encodedTransition.Length != 3)
             throw new FormatException($"Transition '{encodedTransition}' must be 3 characters.");

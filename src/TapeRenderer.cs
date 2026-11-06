@@ -4,12 +4,14 @@ using Raylib_cs;
 namespace TuringFactory.src;
 
 static class TapeRenderer {
-    public static void Draw(IReadOnlyDictionary<int, char> tape, int tapeHead, int previousTapeHead, float transitionProgress, int windowWidth, int windowHeight) {
-        const int cellSize = 55;
+    public static void Draw(IReadOnlyDictionary<int, char> tape, int tapeHead, int previousTapeHead, float transitionProgress, UserInterface.Layout layout) {
         const int visibleCells = 15;
+        if (layout.TapeArea.Width <= 0f || layout.TapeArea.Height <= 0f)
+            return;
+        float cellSize = MathF.Min(55f * layout.Scale, layout.TapeArea.Width / visibleCells);
         float viewWidth = visibleCells * cellSize;
-        float viewX = (windowWidth - viewWidth) / 2f;
-        float viewY = windowHeight - 100;
+        float viewX = layout.TapeArea.X + (layout.TapeArea.Width - viewWidth) / 2f;
+        float viewY = layout.TapeArea.Y + layout.TapeArea.Height - cellSize;
         Rectangle tapeView = new(viewX, viewY, viewWidth, cellSize);
         float movementOffset = (tapeHead - previousTapeHead) * cellSize * (1f - transitionProgress);
 
@@ -26,9 +28,9 @@ static class TapeRenderer {
             Raylib.DrawRectangleRec(cell, isFilled ? Theme.ElementLight : Theme.ElementDark);
 
             string symbol = isFilled ? "1" : "0";
-            Vector2 textSize = Raylib.MeasureTextEx(Theme.Font, symbol, 32f, 1f);
+            Vector2 textSize = Raylib.MeasureTextEx(Theme.Font, symbol, 32f * layout.Scale, 1f);
             Vector2 textPosition = new(cell.X + (cell.Width - textSize.X) / 2f, cell.Y + (cell.Height - textSize.Y) / 2f);
-            Raylib.DrawTextEx(Theme.Font, symbol, textPosition, 32f, 1f, isFilled ? Theme.ElementDark : Theme.ElementLight);
+            Raylib.DrawTextEx(Theme.Font, symbol, textPosition, 32f * layout.Scale, 1f, isFilled ? Theme.ElementDark : Theme.ElementLight);
         }
 
         for (int tapePosition = firstCell + 1; tapePosition <= lastCell; tapePosition++) {
@@ -36,13 +38,13 @@ static class TapeRenderer {
             bool rightFilled = tape.TryGetValue(tapePosition, out char rightValue) && rightValue == '1';
             float x = viewX + (tapePosition - tapeHead + visibleCells / 2) * cellSize + movementOffset;
             Color dividerColor = leftFilled && rightFilled ? Theme.ElementDark : Theme.ElementLight;
-            Raylib.DrawLineEx(new Vector2(x, viewY), new Vector2(x, viewY + cellSize), 2f, dividerColor);
+            Raylib.DrawLineEx(new Vector2(x, viewY), new Vector2(x, viewY + cellSize), MathF.Max(1f, 2f * layout.Scale), dividerColor);
         }
 
         Rectangle headCell = new(viewX + visibleCells / 2 * cellSize + movementOffset, viewY, cellSize, cellSize);
-        Raylib.DrawRectangleLinesEx(headCell, 5f, Theme.Active);
+        Raylib.DrawRectangleLinesEx(headCell, MathF.Max(1f, 5f * layout.Scale), Theme.Active);
 
         Raylib.EndScissorMode();
-        Raylib.DrawRectangleLinesEx(tapeView, 2f, Theme.ElementLight);
+        Raylib.DrawRectangleLinesEx(tapeView, MathF.Max(1f, 2f * layout.Scale), Theme.ElementLight);
     }
 }

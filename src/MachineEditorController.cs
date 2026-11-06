@@ -23,7 +23,7 @@ sealed class MachineEditorController(TransitionDiagramRenderer diagramRenderer, 
         bool onFixedControl = Raylib.CheckCollisionPointRec(mousePosition, layout.PlayButton) ||
             Raylib.CheckCollisionPointRec(mousePosition, layout.ResetButton) ||
             Raylib.CheckCollisionPointRec(mousePosition, layout.SpeedSlider) ||
-            mousePosition.Y < 70f;
+            mousePosition.Y < 70f * layout.Scale;
         if (onFixedControl) {
             if (Raylib.IsMouseButtonReleased(MouseButton.Right))
                 transitionSource = null;
@@ -142,6 +142,7 @@ sealed class MachineEditorController(TransitionDiagramRenderer diagramRenderer, 
             if (machine.TryGetTransition(hit.State, updated.ReadValue, out _)) {
                 if (!machine.SwapTransitions(hit.State))
                     return false;
+                diagramRenderer.SwapSelfLoopAngles(hit.State);
             } else {
                 machine.RemoveTransition(hit.State, hit.ReadSymbol);
                 machine.SetTransition(hit.State, updated.ReadValue, updated);

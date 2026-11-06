@@ -38,12 +38,23 @@ class Program {
 
             workspaceController.Update(mousePosition, layout.Workspace, machine.States);
             bool modelChanged = editor.Update(mousePosition, layout, machine);
+            string definition = machine.ToDefinitionString();
+            UserInterface.Actions actions = userInterface.Update(mousePosition, layout, definition);
+            bool definitionChanged = false;
+            if (actions.DefinitionSubmission is string submittedDefinition) {
+                try {
+                    machine.ReplaceWith(TuringMachine.Parse(submittedDefinition));
+                    diagramRenderer.Refresh();
+                    definitionChanged = true;
+                } catch (Exception error) when (error is ArgumentException or FormatException) {
+                    userInterface.RejectDefinition(error.Message);
+                }
+            }
             MachineValidationResult validation = machine.Validate();
-            UserInterface.Actions actions = userInterface.Update(mousePosition, layout);
             runtime.Speed = userInterface.Speed;
             if (actions.Reset)
                 runtime.Reset();
-            if (modelChanged)
+            if (modelChanged || definitionChanged)
                 runtime.Reset();
             if (actions.TogglePlay && validation.IsValid)
                 runtime.TogglePlay();
@@ -53,8 +64,8 @@ class Program {
             Raylib.BeginDrawing();
             Raylib.ClearBackground(Theme.Background);
             workspaceController.Draw(machine.States, runtime.CurrentState, runtime.StepCount, runtime.PreviousState, runtime.ActiveTransition, runtime.TransitionProgress, editor, mousePosition);
-            TapeRenderer.Draw(runtime.Tape, runtime.TapeHead, runtime.PreviousTapeHead, runtime.TransitionProgress, (int)windowWidth, (int)windowHeight);
-            TapeHistoryRenderer.Draw(runtime.TapeHistory, machine.States, (int)windowWidth, (int)windowHeight);
+            TapeRenderer.Draw(runtime.Tape, runtime.TapeHead, runtime.PreviousTapeHead, runtime.TransitionProgress, layout);
+            TapeHistoryRenderer.Draw(runtime.TapeHistory, machine.States, layout);
             userInterface.Draw(machine.ToDefinitionString(), validation, runtime, layout);
             Raylib.EndDrawing();
         }

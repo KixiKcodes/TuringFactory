@@ -9,17 +9,17 @@ static class TapeHistoryRenderer {
         int TapeHead
     );
 
-    public static void Draw(IReadOnlyList<TapeHistorySnapshot> history, IReadOnlyCollection<char> states, int windowWidth, int windowHeight) {
-        const float margin = 20f;
-        const float viewWidth = 260f;
+    public static void Draw(IReadOnlyList<TapeHistorySnapshot> history, IReadOnlyCollection<char> states, UserInterface.Layout layout) {
         const int initialVisibleCells = 15;
         const int outlineFadeStart = 60;
         const int outlineFadeDuration = 60;
 
-        float viewX = windowWidth - viewWidth - margin;
-        float viewY = margin;
-        float viewHeight = windowHeight - margin * 2f;
-        if (history.Count == 0)
+        Rectangle panel = layout.HistoryPanel;
+        float viewX = panel.X;
+        float viewY = panel.Y;
+        float viewWidth = panel.Width;
+        float viewHeight = panel.Height;
+        if (history.Count == 0 || viewWidth <= 0f || viewHeight <= 0f)
             return;
         int minimumPosition = history.Min(snapshot =>
             Math.Min(snapshot.TapeHead, snapshot.Tape.Keys.DefaultIfEmpty(snapshot.TapeHead).Min())
@@ -49,7 +49,7 @@ static class TapeHistoryRenderer {
                 else {
                     float fade = Math.Clamp((outlineFadeStart + outlineFadeDuration - row) / (float)outlineFadeDuration, 0.2f, 1f);
                     color.A = (byte)(fade * 255f);
-                    Raylib.DrawRectangleLinesEx(cellRectangle, 2f, color);
+                    Raylib.DrawRectangleLinesEx(cellRectangle, MathF.Max(1f, 2f * layout.Scale), color);
                 }
             }
         }
