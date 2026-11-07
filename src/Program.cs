@@ -14,18 +14,23 @@ class Program {
         DateTime previousSampleTime = DateTime.UtcNow;
 
         TuringMachine machine = machineArguments.Length > 0 ? TuringMachine.Parse(string.Join(" ", machineArguments)) : new TuringMachine();
-        TuringMachineRuntime runtime = new(machine);
         TransitionDiagramRenderer diagramRenderer = new(machine);
         WorkspaceController workspaceController = new(diagramRenderer);
         MachineEditorController editor = new(diagramRenderer, workspaceController);
-        UserInterface userInterface = new();
+        const SoundMode soundMode = SoundMode.Notes;
+        UserInterface userInterface = new(soundMode);
 
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint | ConfigFlags.ResizableWindow);
         Raylib.InitWindow(1920, 1080, "Turing Factory");
         Raylib.SetWindowPosition(0, 0);
         if (!Raylib.IsWindowReady())
             throw new InvalidOperationException("Raylib failed to initialize the window.");
+        Raylib.SetExitKey(KeyboardKey.Null);
         Raylib.SetTargetFPS(144);
+        Raylib.InitAudioDevice();
+        SoundManager soundManager = new(soundMode);
+        soundManager.RegisterStates(machine.States);
+        TuringMachineRuntime runtime = new(machine, soundManager);
         Theme.LoadFont();
 
         while (!Raylib.WindowShouldClose()) {
@@ -53,6 +58,12 @@ class Program {
                     userInterface.RejectDefinition(error.Message);
                 }
             }
+            soundManager.RegisterStates(machine.States);
+            soundManager.Volume = userInterface.Volume;
+            if (actions.SoundModeChanged) {
+                soundManager.SetMode(userInterface.SoundMode);
+                soundManager.RegisterStates(machine.States);
+            }
             MachineValidationResult validation = machine.Validate();
             runtime.Speed = userInterface.Speed;
             if (actions.Reset)
@@ -74,7 +85,9 @@ class Program {
         }
 
         Theme.UnloadFont();
+        soundManager.Dispose();
         Raylib.CloseWindow();
+        Raylib.CloseAudioDevice();
     }
 
     private static void PrintDebugLog(Process process, TimeSpan previousCpuTime, DateTime previousSampleTime) {

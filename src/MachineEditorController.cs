@@ -23,6 +23,10 @@ sealed class MachineEditorController(TransitionDiagramRenderer diagramRenderer, 
         bool onFixedControl = Raylib.CheckCollisionPointRec(mousePosition, layout.PlayButton) ||
             Raylib.CheckCollisionPointRec(mousePosition, layout.ResetButton) ||
             Raylib.CheckCollisionPointRec(mousePosition, layout.SpeedSlider) ||
+            Raylib.CheckCollisionPointRec(mousePosition, layout.SettingsButton) ||
+            (Raylib.CheckCollisionPointRec(mousePosition, layout.SettingsPanel) &&
+            (Raylib.CheckCollisionPointRec(mousePosition, layout.VolumeSlider) ||
+            Raylib.CheckCollisionPointRec(mousePosition, layout.ModeButton))) ||
             mousePosition.Y < 70f * layout.Scale;
         if (onFixedControl) {
             if (Raylib.IsMouseButtonReleased(MouseButton.Right))

@@ -29,7 +29,7 @@ static class Theme {
     public static Font Font { get; private set; }
 
     public static void LoadFont() {
-        string fontPath = Path.Combine(AppContext.BaseDirectory, "resources", "Nunito-Medium.ttf");
+        string fontPath = Path.Combine(AppContext.BaseDirectory, "resources", "font", "Nunito-Medium.ttf");
         Font = Raylib.LoadFontEx(fontPath, 144, null, 0);
         Raylib.SetTextureFilter(Font.Texture, TextureFilter.Bilinear);
     }

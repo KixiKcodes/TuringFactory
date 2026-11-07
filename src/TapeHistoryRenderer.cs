@@ -45,7 +45,7 @@ static class TapeHistoryRenderer {
                 if (cell.Value == '1')
                     Raylib.DrawRectangleRec(cellRectangle, color);
                 else {
-                    color.A = 128; // half opacity
+                    color.A = 80; // half opacity
                     Raylib.DrawRectangleRec(cellRectangle, color);
                 }
             }

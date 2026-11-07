@@ -5,6 +5,7 @@ sealed class TuringMachineRuntime {
     const float fastestStepDuration = 0.01f;
 
     readonly TuringMachine machine;
+    readonly SoundManager soundManager;
     readonly Dictionary<int, char> tape = [];
     readonly Dictionary<int, char> tapeFillStates = [];
     readonly List<TapeHistoryRenderer.TapeHistorySnapshot> tapeHistory = [];
@@ -25,8 +26,9 @@ sealed class TuringMachineRuntime {
     public bool IsPlaying { get; private set; }
     public float Speed { get => speed; set => speed = Math.Clamp(value, 0f, 1f); }
 
-    public TuringMachineRuntime(TuringMachine machine) {
+    public TuringMachineRuntime(TuringMachine machine, SoundManager soundManager) {
         this.machine = machine;
+        this.soundManager = soundManager;
         Reset();
     }
 
@@ -45,8 +47,12 @@ sealed class TuringMachineRuntime {
             }
         }
 
-        if (TransitionProgress < 1f)
+        float previousTransitionProgress = TransitionProgress;
+        if (TransitionProgress < 1f) {
             TransitionProgress = MathF.Min(TransitionProgress + deltaTime / stepDuration, 1f);
+            if (previousTransitionProgress < 1f && TransitionProgress >= 1f)
+                soundManager.PlayStateSound(CurrentState);
+        }
     }
 
     public void TogglePlay() {
