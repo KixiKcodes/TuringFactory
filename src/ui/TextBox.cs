@@ -2,7 +2,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using Raylib_cs;
 
-namespace TuringFactory.src;
+namespace TuringFactory;
 
 sealed class TextBox {
     string text = string.Empty;

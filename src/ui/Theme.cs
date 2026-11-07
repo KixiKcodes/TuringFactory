@@ -1,6 +1,6 @@
 using Raylib_cs;
 
-namespace TuringFactory.src;
+namespace TuringFactory;
 
 static class Theme {
     public static readonly Color Background = new(24, 25, 38);

@@ -1,8 +1,9 @@
 ﻿using System.Diagnostics;
 using System.Numerics;
 using Raylib_cs;
+using MachineValidationResult = TuringFactory.TuringMachine.MachineValidationResult;
 
-namespace TuringFactory.src;
+namespace TuringFactory;
 
 class Program {
     public static void Main(string[] args) {
@@ -23,13 +24,10 @@ class Program {
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint | ConfigFlags.ResizableWindow);
         Raylib.InitWindow(1920, 1080, "Turing Factory");
         Raylib.SetWindowPosition(0, 0);
-        if (!Raylib.IsWindowReady())
-            throw new InvalidOperationException("Raylib failed to initialize the window.");
         Raylib.SetExitKey(KeyboardKey.Null);
         Raylib.SetTargetFPS(144);
         Raylib.InitAudioDevice();
         SoundManager soundManager = new(soundMode);
-        soundManager.RegisterStates(machine.States);
         TuringMachineRuntime runtime = new(machine, soundManager);
         Theme.LoadFont();
 
@@ -58,11 +56,9 @@ class Program {
                     userInterface.RejectDefinition(error.Message);
                 }
             }
-            soundManager.RegisterStates(machine.States);
             soundManager.Volume = userInterface.Volume;
             if (actions.SoundModeChanged) {
                 soundManager.SetMode(userInterface.SoundMode);
-                soundManager.RegisterStates(machine.States);
             }
             MachineValidationResult validation = machine.Validate();
             runtime.Speed = userInterface.Speed;

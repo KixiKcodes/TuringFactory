@@ -1,47 +1,8 @@
 using System.Numerics;
 using Raylib_cs;
+using MachineValidationResult = TuringFactory.TuringMachine.MachineValidationResult;
 
-namespace TuringFactory.src;
-
-sealed class Button {
-    const float cornerRadius = 0.35f;
-
-    public bool Update(Vector2 mousePosition, Rectangle bounds, bool enabled) {
-        return enabled && Raylib.IsMouseButtonPressed(MouseButton.Left) && Raylib.CheckCollisionPointRec(mousePosition, bounds);
-    }
-
-    public void Draw(Rectangle bounds, string text, Font font, bool enabled) {
-        bool hovered = enabled && Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), bounds);
-        Color background = !enabled ? Theme.Innactive : hovered ? Theme.MouseHover : Theme.ElementLight;
-        Color textColor = enabled ? Theme.ElementDark : Theme.Panel;
-        Raylib.DrawRectangleRounded(bounds, cornerRadius, 8, background);
-        float textSizeValue = MathF.Max(1f, bounds.Height * 0.67f);
-        Vector2 textSize = Raylib.MeasureTextEx(font, text, textSizeValue, 1);
-        Raylib.DrawTextEx(font, text, new Vector2(bounds.X + bounds.Width / 2f - textSize.X / 2f, bounds.Y + bounds.Height / 2f - textSize.Y / 2f), textSizeValue, 1, textColor);
-    }
-}
-
-sealed class Slider {
-    const float cornerRadius = 0.35f;
-    bool dragging;
-
-    public float Update(Vector2 mousePosition, Rectangle bounds, float value, float scale) {
-        float handleX = bounds.X + value * bounds.Width;
-        Vector2 handlePosition = new(handleX, bounds.Y + bounds.Height / 2f);
-        if (Raylib.IsMouseButtonPressed(MouseButton.Left) && Vector2.Distance(mousePosition, handlePosition) <= 12f * scale)
-            dragging = true;
-        if (Raylib.IsMouseButtonReleased(MouseButton.Left))
-            dragging = false;
-        return dragging ? Math.Clamp((mousePosition.X - bounds.X) / bounds.Width, 0f, 1f) : value;
-    }
-
-    public void Draw(Rectangle bounds, float value, float scale) {
-        Raylib.DrawRectangleRounded(bounds, cornerRadius, 8, Theme.Panel);
-        float handleX = bounds.X + value * bounds.Width;
-        Color handleColor = dragging || Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), bounds) ? Theme.MouseHover : Theme.ElementLight;
-        Raylib.DrawCircle((int)handleX, (int)(bounds.Y + bounds.Height / 2f), (int)(9f * scale), handleColor);
-    }
-}
+namespace TuringFactory;
 
 sealed class UserInterface(SoundMode soundMode = SoundMode.Notes) {
     const float designWidth = 1920f;
@@ -82,8 +43,8 @@ sealed class UserInterface(SoundMode soundMode = SoundMode.Notes) {
         Rectangle SettingsPanel,
         Rectangle PlayButton,
         Rectangle ResetButton,
-        Rectangle SpeedSlider
-        ,Rectangle VolumeSlider,
+        Rectangle SpeedSlider,
+        Rectangle VolumeSlider,
         Rectangle ModeButton,
         Rectangle StepCountArea
     );
@@ -189,7 +150,6 @@ sealed class UserInterface(SoundMode soundMode = SoundMode.Notes) {
     static Rectangle GetDefinitionBounds(string definition, Layout layout) {
         float titleSize = 28f * layout.Scale;
         Vector2 size = Raylib.MeasureTextEx(Theme.Font, definition, titleSize, 1);
-        return new(layout.WindowWidth / 2f - size.X / 2f - 8f * layout.Scale, 0f,
-            size.X + 16f * layout.Scale, 70f * layout.Scale);
+        return new(layout.WindowWidth / 2f - size.X / 2f - 8f * layout.Scale, 0f, size.X + 16f * layout.Scale, 70f * layout.Scale);
     }
 }

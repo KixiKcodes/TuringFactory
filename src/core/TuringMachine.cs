@@ -1,23 +1,23 @@
-namespace TuringFactory.src;
-
-public enum MoveDirection {
-    Left,
-    Right
-}
-
-public sealed record Transition(
-    char ReadValue,
-    char WriteValue,
-    MoveDirection Direction,
-    char NextState
-);
-
-public sealed record MachineValidationResult(
-    bool IsValid,
-    IReadOnlyList<string> Errors
-);
+namespace TuringFactory;
 
 public sealed class TuringMachine {
+    public enum MoveDirection {
+        Left,
+        Right
+    }
+
+    public sealed record Transition(
+        char ReadValue,
+        char WriteValue,
+        MoveDirection Direction,
+        char NextState
+    );
+
+    public sealed record MachineValidationResult(
+        bool IsValid,
+        IReadOnlyList<string> Errors
+    );
+
     public const char HaltState = 'Z';
     public char StartState { get; } = 'A';
 

@@ -1,7 +1,7 @@
 using System.Numerics;
 using Raylib_cs;
 
-namespace TuringFactory.src;
+namespace TuringFactory;
 
 static class TapeRenderer {
     public static void Draw(IReadOnlyDictionary<int, char> tape, int tapeHead, int previousTapeHead, float transitionProgress, UserInterface.Layout layout) {

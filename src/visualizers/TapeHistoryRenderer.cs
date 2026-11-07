@@ -1,6 +1,6 @@
 using Raylib_cs;
 
-namespace TuringFactory.src;
+namespace TuringFactory;
 
 static class TapeHistoryRenderer {
     public readonly record struct TapeHistorySnapshot(

@@ -1,7 +1,9 @@
 using System.Numerics;
 using Raylib_cs;
+using MoveDirection = TuringFactory.TuringMachine.MoveDirection;
+using Transition = TuringFactory.TuringMachine.Transition;
 
-namespace TuringFactory.src;
+namespace TuringFactory;
 
 class TransitionDiagramRenderer(TuringMachine machine) {
     readonly record struct GraphEdge(

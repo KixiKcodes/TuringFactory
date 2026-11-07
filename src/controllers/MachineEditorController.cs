@@ -1,7 +1,9 @@
 using System.Numerics;
 using Raylib_cs;
+using MoveDirection = TuringFactory.TuringMachine.MoveDirection;
+using Transition = TuringFactory.TuringMachine.Transition;
 
-namespace TuringFactory.src;
+namespace TuringFactory;
 
 sealed class MachineEditorController(TransitionDiagramRenderer diagramRenderer, WorkspaceController workspaceController) {
     readonly TransitionDiagramRenderer diagramRenderer = diagramRenderer;

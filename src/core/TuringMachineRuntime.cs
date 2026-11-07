@@ -1,4 +1,7 @@
-namespace TuringFactory.src;
+using Transition = TuringFactory.TuringMachine.Transition;
+using MoveDirection = TuringFactory.TuringMachine.MoveDirection;
+
+namespace TuringFactory;
 
 sealed class TuringMachineRuntime {
     const float slowestStepDuration = 1.0f;
@@ -40,6 +43,8 @@ sealed class TuringMachineRuntime {
             if (stepTimer >= stepDuration && TransitionProgress >= 1f) {
                 stepTimer = 0f;
                 PreviousTapeHead = TapeHead;
+                if (StepCount == 0)
+                    soundManager.PlayStateSound(CurrentState);
                 StepMachine();
                 StepCount++;
                 AddHistorySnapshot();
