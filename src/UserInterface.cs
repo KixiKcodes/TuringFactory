@@ -164,10 +164,13 @@ sealed class UserInterface(SoundMode soundMode = SoundMode.Notes) {
         definitionTextBox.Draw(Theme.Font, layout.WindowWidth / 2f, padding, titleSizeValue, statusColor, layout.Scale);
         string stepText = $"Steps: {runtime.StepCount}";
         Vector2 stepTextSize = Raylib.MeasureTextEx(Theme.Font, stepText, bodyTextSize, 1);
-        Raylib.DrawTextEx(Theme.Font, stepText, new Vector2(layout.StepCountArea.X + (layout.StepCountArea.Width - stepTextSize.X) / 2f, layout.StepCountArea.Y + (layout.StepCountArea.Height - stepTextSize.Y) / 2f), bodyTextSize, 1, Theme.ElementLight);
+        Raylib.DrawTextEx(Theme.Font, stepText, new Vector2(layout.WindowWidth / 2f - stepTextSize.X / 2f, layout.StepCountArea.Y + (layout.StepCountArea.Height - stepTextSize.Y) / 2f), bodyTextSize, 1, Theme.ElementLight);
         string? error = definitionTextBox.Error ?? (!validation.IsValid ? validation.Errors[0] : null);
-        if (error is not null)
-            Raylib.DrawTextEx(Theme.Font, error, new Vector2(layout.WindowWidth / 2f - 180f * layout.Scale, padding + 34f * layout.Scale), 18f * layout.Scale, 1, Theme.Incomplete);
+        if (error is not null) {
+            float errorSizeValue = 18f * layout.Scale;
+            Vector2 errorSize = Raylib.MeasureTextEx(Theme.Font, error, errorSizeValue, 1);
+            Raylib.DrawTextEx(Theme.Font, error, new Vector2(layout.WindowWidth / 2f - errorSize.X / 2f, padding + 34f * layout.Scale), errorSizeValue, 1, Theme.Incomplete);
+        }
 
         bool playEnabled = validation.IsValid;
         playButton.Draw(layout.PlayButton, runtime.IsPlaying ? "Pause" : "Play", Theme.Font, playEnabled);
