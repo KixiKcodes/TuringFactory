@@ -8,7 +8,6 @@ public enum SoundMode {
 }
 
 public sealed class SoundManager : IDisposable {
-    static readonly string SoundsPath = Path.Combine(AppContext.BaseDirectory, "resources", "sounds");
     readonly Dictionary<char, Sound> stateSounds = [];
     SoundMode mode;
     float volume = 1f;
@@ -54,9 +53,11 @@ public sealed class SoundManager : IDisposable {
     }
 
     void LoadStateSound(char state, string fileName) {
-        string path = Path.Combine(SoundsPath, fileName);
-        if (File.Exists(path))
-            stateSounds[state] = Raylib.LoadSound(path);
+        string resourcePath = Path.Combine("resources", "sounds", fileName);
+        byte[] soundData = ResourceLoader.ReadBytes(resourcePath);
+        Wave wave = Raylib.LoadWaveFromMemory(Path.GetExtension(fileName), soundData);
+        stateSounds[state] = Raylib.LoadSoundFromWave(wave);
+        Raylib.UnloadWave(wave);
         if (stateSounds.TryGetValue(state, out Sound sound))
             Raylib.SetSoundVolume(sound, volume);
     }
