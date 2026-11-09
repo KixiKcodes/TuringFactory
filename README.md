@@ -8,14 +8,14 @@ This project was inspired by the visuals in the video [BB(5) = 47,176,870](https
 
 ## Manual
 
-I won't cover how a turing machine works here, you can learn about that with a quick google search or by watching Polylog's video. Instead this section will focus on how to use the editor.
+I won't cover how a Turing machine works here, you can learn about that with a quick google search or by watching Polylog's video. Instead this section will focus on how to use the editor.
 
 ###### **NOTE THE THE COLORS IN SOME GIFS ARE BROKEN. I'M UNSURE WHY BUT IT IS IRRELEVANT TO THE INFORMATION PORTRAYED!**
 
 ### Startup and Arguments
 
 The program can be started like any other.  
-Additonally, Turing Factory takes two command line arguments:
+Additionally, Turing Factory takes two command line arguments:
 - `debug` : Displays the debug info on the top left corner of the window.
 - `[BB standard machine format string]` : Starts the program with an existing machine built from the official BB format for Turing machines.
 
@@ -66,7 +66,7 @@ To change the transition direction and read/write values, simply left click on t
 
 ![editing transitions](docs/images/transition_editing.gif)
 
-Since the read values are strictly enforced per state, switching the read value on a transition which already has both 0 and 1 transitions will automaticaly swap the read values between those two transitions. Note that, if the transitions are exactly the same, switching is meaningless and will have no effect at all.
+Since the read values are strictly enforced per state, switching the read value on a transition which already has both 0 and 1 transitions will automatically swap the read values between those two transitions. Note that, if the transitions are exactly the same, switching is meaningless and will have no effect at all.
 
 ![switching transitions](docs/images/transition_switching.gif)
 
@@ -76,7 +76,7 @@ Finally, the text at the top of the window which displays the BB format string o
 
 To stop editing the definition string, press the escape key.
 
-Note that, holding down backspace will not retrigger the delete key, you must press it per character. This may be changed in the future but was not a priority during development, as this defitinion editing is a secondary feature mostly for **pasting existing defitions directly into the program with Ctrl+V.**
+Note that, holding down backspace will not retrigger the delete key, you must press it per character. This may be changed in the future but was not a priority during development, as this definition editing is a secondary feature mostly for **pasting existing definitions directly into the program with Ctrl+V.**
 
 ![definition editing](docs/images/definition_pasting.gif)
 
@@ -90,7 +90,7 @@ The speed slider controls the time it takes for a step of the machine to complet
 
 You can see the tape movement and values directly in the tape visualizer at the bottom of the window, as well as the tape history on the right side of the window. This history view will scale automatically to fit all the cells in the panel. The cells are colored per the state which wrote that cell, either at full opacity for a 1 and about a third opacity for a 0.
 
-Note: The history view indivisually renders all cells, so as the step count increases so does the memory load and rendering cost per frame. After some benchmarking, FPS starts to drop steadily after about 2000 steps on my computer. This likely varies from machine to machine and computer to computer. **Future updates may try to improve performace by optimizing the rendering.**
+Note: The history view individually renders all cells, so as the step count increases so does the memory load and rendering cost per frame. After some benchmarking, FPS starts to drop steadily after about 2000 steps on my computer. This likely varies from machine to machine and computer to computer. **Future updates may try to improve performance by optimizing the rendering.**
 
 ### Sound Controls
 
