@@ -1,3 +1,5 @@
+# This is necessary because of stupid namespace convention warnings that require directory structure to be followed. I can't be asked.
+
 root = true
 
 [*.cs]
