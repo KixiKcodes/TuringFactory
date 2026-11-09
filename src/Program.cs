@@ -7,6 +7,7 @@ namespace TuringFactory;
 
 class Program {
     public static void Main(string[] args) {
+        // Debug mode flag check 
         bool debug = args.Length > 0 && string.Equals(args[0], "debug", StringComparison.OrdinalIgnoreCase);
         string[] machineArguments = debug ? args[1..] : args;
         if (debug) Console.WriteLine("== DEBUG MODE IS ENABLED! ==");
@@ -14,6 +15,7 @@ class Program {
         TimeSpan previousCpuTime = process.TotalProcessorTime;
         DateTime previousSampleTime = DateTime.UtcNow;
 
+        // Machine class initialization and setting up other classes
         TuringMachine machine = machineArguments.Length > 0 ? TuringMachine.Parse(string.Join(" ", machineArguments)) : new TuringMachine();
         TransitionDiagramRenderer diagramRenderer = new(machine);
         WorkspaceController workspaceController = new(diagramRenderer);
@@ -21,6 +23,7 @@ class Program {
         const SoundMode soundMode = SoundMode.Notes;
         UserInterface userInterface = new(soundMode);
 
+        // Setup raylib window and audio and font
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint | ConfigFlags.ResizableWindow);
         Raylib.InitWindow(1920, 1080, "Turing Factory");
         Raylib.SetWindowPosition(0, 0);
@@ -31,6 +34,7 @@ class Program {
         TuringMachineRuntime runtime = new(machine, soundManager);
         Theme.LoadFont();
 
+        // Main loop
         while (!Raylib.WindowShouldClose()) {
             if (debug)
                 PrintDebugLog(process, previousCpuTime, previousSampleTime);
@@ -39,6 +43,7 @@ class Program {
             Vector2 mousePosition = Raylib.GetMousePosition();
             UserInterface.Layout layout = userInterface.GetLayout(windowWidth, windowHeight);
 
+            // Handle user interactions
             string definition = machine.ToDefinitionString();
             UserInterface.Actions actions = userInterface.Update(mousePosition, layout, definition);
             bool modelChanged = false;
@@ -57,9 +62,8 @@ class Program {
                 }
             }
             soundManager.Volume = userInterface.Volume;
-            if (actions.SoundModeChanged) {
+            if (actions.SoundModeChanged)
                 soundManager.SetMode(userInterface.SoundMode);
-            }
             MachineValidationResult validation = machine.Validate();
             runtime.Speed = userInterface.Speed;
             if (actions.Reset)
@@ -69,8 +73,9 @@ class Program {
             if (actions.TogglePlay && validation.IsValid)
                 runtime.TogglePlay();
 
-            runtime.Update(Raylib.GetFrameTime());
+            runtime.Update(Raylib.GetFrameTime()); // update frame
 
+            // Render visualizers and user interface
             Raylib.BeginDrawing();
             Raylib.ClearBackground(Theme.Background);
             workspaceController.Draw(machine.States, runtime.CurrentState, runtime.StepCount, runtime.PreviousState, runtime.ActiveTransition, runtime.TransitionProgress, editor, mousePosition);
@@ -86,6 +91,8 @@ class Program {
         Raylib.CloseAudioDevice();
     }
 
+    // Debug logs shown in the upper left corner of the screen. These may or may not be useful.
+    // I used them mostly for the FPS, which I noticed usually drops after around 2000 steps, but this can vary depending on the machine and tape history.
     private static void PrintDebugLog(Process process, TimeSpan previousCpuTime, DateTime previousSampleTime) {
         double elapsedMilliseconds = (DateTime.UtcNow - previousSampleTime).TotalMilliseconds;
         double cpuMilliseconds = (process.TotalProcessorTime - previousCpuTime).TotalMilliseconds;

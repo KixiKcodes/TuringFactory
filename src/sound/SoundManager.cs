@@ -96,9 +96,9 @@ public sealed class SoundManager : IDisposable {
         LoadStateSound('A', Path.Combine("drums", "kickacoustic.wav"));
         LoadStateSound('B', Path.Combine("drums", "snareacoustic.wav"));
         LoadStateSound('C', Path.Combine("drums", "closedHH1.wav"));
-        LoadStateSound('D', Path.Combine("drums", "snarerim1.wav"));
-        LoadStateSound('E', Path.Combine("drums", "openHHshort1.wav"));
-        LoadStateSound('F', Path.Combine("drums", "openHHlong1.wav"));
+        LoadStateSound('D', Path.Combine("drums", "openHHshort1.wav"));
+        LoadStateSound('E', Path.Combine("drums", "openHHlong1.wav"));
+        LoadStateSound('F', Path.Combine("drums", "snarerim1.wav"));
         LoadStateSound('G', Path.Combine("drums", "cymbalride.wav"));
         LoadStateSound('H', Path.Combine("drums", "closedHH2.wav"));
         LoadStateSound('I', Path.Combine("drums", "openHHshort2.wav"));
