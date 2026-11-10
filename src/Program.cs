@@ -42,8 +42,8 @@ class Program {
         UserInterface userInterface = new(soundMode);
 
         // Setup raylib window and audio and font
-        Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint | ConfigFlags.ResizableWindow);
-        Raylib.InitWindow(1920, 1080, "Turing Factory");
+        Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint | ConfigFlags.ResizableWindow | ConfigFlags.MaximizedWindow);
+        Raylib.InitWindow(1280, 720, "Turing Factory");
         Raylib.SetWindowPosition(0, 0);
         Raylib.SetExitKey(KeyboardKey.Null);
         Raylib.SetTargetFPS(144);
